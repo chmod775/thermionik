@@ -1,3 +1,10 @@
+class CBlockCode {
+  constructor() {
+    this.content = '';
+    this.asJS = false;
+  }
+}
+
 class CBlock extends Block {
   constructor(name) {
     super();
@@ -6,16 +13,29 @@ class CBlock extends Block {
   
     this._type = 'C';
 
-    this.code = '';
-    this.codeAsJS = false;
+    this.setupCode = new CBlockCode();
+    this.loopCode = new CBlockCode();
   }
 
-  SetCode(code, asJS) {
-    this.code = code;
-    this.codeAsJS = asJS;
+  SetSetupCode(code, asJS) {
+    this.setupCode.content = code;
+    this.setupCode.asJS = asJS;
+  }
+
+  SetLoopCode(code, asJS) {
+    this.loopCode.content = code;
+    this.loopCode.asJS = asJS;
+  }
+
+  GenerateCountConst(count) {
+    let genCountConst = mainGenerator.GenerateConst(`COUNT_${this.name}`, 'int', count);
+    return genCountConst;
   }
 
   GenerateCode() {
+    // Generate header comment
+    let genHeaderComment = mainGenerator.GenerateComment(`##### block ${this.name} by ${this.configs.author || 'Anonymous'} #####`);
+
     // Generate data structure
     let genDataName = `_s_data_${this.name}`;
     let genDataStructure = this.data.GenerateStructure(genDataName);
@@ -28,39 +48,63 @@ class CBlock extends Block {
         type: po.type
       });
     }
-    let genOutputsStructure = mainGenerator.GenerateStructure(`_s_outputs_${this.name}`, genOutputsElements);
+    let genOutputsName = `_s_outputs_${this.name}`;
+    let genOutputsStructure = mainGenerator.GenerateStructure(genOutputsName, genOutputsElements);
+ 
+    // Generate setup code
+    let genParsedSetupCode = Helpers.ParseTemplate(this.setupCode.content, this.configs, this.setupCode.asJS);
+    let genSetupCodeParameters = [];
+    genSetupCodeParameters.push({
+      name: 'data',
+      type: `${genDataName}*`
+    });
 
-    // Generate code
-    let genParsedCode = Helpers.ParseTemplate(this.code, this.configs, this.codeAsJS);
-    let genCodeParameters = [];
-    genCodeParameters.push({
+    let genSetupCodeFunction = mainGenerator.GenerateFunction(
+      `setup_${this.name}`, // Name
+      'void', // Return type
+      genSetupCodeParameters, // Parameters
+      genParsedSetupCode // LoopCode
+    );
+
+    // Generate loop code
+    let genParsedLoopCode = Helpers.ParseTemplate(this.loopCode.content, this.configs, this.loopCode.asJS);
+    let genLoopCodeParameters = [];
+    genLoopCodeParameters.push({
       name: 'data',
       type: `${genDataName}*`
     });
     for (var pi of this.plugs.inputs) {
-      genCodeParameters.push({
+      genLoopCodeParameters.push({
         name: pi.name,
         type: pi.type
       });
     }
     for (var po of this.plugs.outputs) {
-      genCodeParameters.push({
+      genLoopCodeParameters.push({
         name: po.name,
         type: `${po.type}*`
       });
     }
 
-    let genCodeFunction = mainGenerator.GenerateFunction(
+    let genLoopCodeFunction = mainGenerator.GenerateFunction(
       `loop_${this.name}`, // Name
       'void', // Return type
-      genCodeParameters, // Parameters
-      genParsedCode // Code
+      genLoopCodeParameters, // Parameters
+      genParsedLoopCode // LoopCode
     );
 
+    // Generate instance arrays
+    let genDataArray = mainGenerator.GenerateArray(`data_${this.name}`, genDataName, `COUNT_${this.name}`);
+    let genOutputsArray = mainGenerator.GenerateArray(`outputs_${this.name}`, genOutputsName, `COUNT_${this.name}`);
+
     return [
+      genHeaderComment,
       genDataStructure,
       genOutputsStructure,
-      genCodeFunction
+      genSetupCodeFunction,
+      genLoopCodeFunction,
+      genDataArray,
+      genOutputsArray
     ].join('\n');
   }
 }

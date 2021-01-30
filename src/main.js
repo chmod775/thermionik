@@ -12,7 +12,7 @@ mainBlock.SetPlugs(
 mainBlock.SetData(BlockData.FromElements([
   { name: 'lastval', type: 'bool' }
 ]));
-mainBlock.SetCode(
+mainBlock.SetLoopCode(
   `
   *out = (in && !data->lastval);
   data->lastval = in;
@@ -20,4 +20,15 @@ mainBlock.SetCode(
   false
 );
 
+mainBlock.SetSetupCode(
+  `
+  var ret = [];
+  for (var i = 0; i < 50; i++)
+    ret.push(\`in.array[\${i}]\`);
+  return ret.join('\\n');
+  `,
+  true
+);
+
 console.log(mainBlock.GenerateCode());
+console.log(mainBlock.GenerateCountConst(10));
