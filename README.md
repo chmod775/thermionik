@@ -52,6 +52,7 @@ You can use normal trusted C code to allow advanced functions and full backward 
 
 # Nerdy stuff
 The Block class is composed as follow:
+
 	Block {
 		interface {
 			inputs // Dictionary of input classes
@@ -68,6 +69,7 @@ The Block class is composed as follow:
 	}
 
 Hardware is abstracted by the use of a Board class, composed as follow:
+
 	Board {
 	}
 
