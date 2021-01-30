@@ -1,23 +1,30 @@
- ______  __ __    ___  ____   ___ ___  ____  ___   ____   ____   __ 
-|      ||  |  |  /  _]|    \ |   |   ||    |/   \ |    \ |    | /  ]
-|      ||  |  | /  [_ |  D  )| _   _ | |  ||     ||  _  | |  | /  / 
-|_|  |_||  _  ||    _]|    / |  \_/  | |  ||  O  ||  |  | |  |/  /  
-  |  |  |  |  ||   [_ |    \ |   |   | |  ||     ||  |  | |  /   \_ 
-  |  |  |  |  ||     ||  .  \|   |   | |  ||     ||  |  | |  \     |
-  |__|  |__|__||_____||__|\_||___|___||____|\___/ |__|__||____\____|
-                                                                    
-
+ ______  __ __    ___  ____   ___ ___  ____  ___   ____   ____  __  _ 
+|      ||  |  |  /  _]|    \ |   |   ||    |/   \ |    \ |    ||  |/ ]
+|      ||  |  | /  [_ |  D  )| _   _ | |  ||     ||  _  | |  | |  ' / 
+|_|  |_||  _  ||    _]|    / |  \_/  | |  ||  O  ||  |  | |  | |    \ 
+  |  |  |  |  ||   [_ |    \ |   |   | |  ||     ||  |  | |  | |     |
+  |  |  |  |  ||     ||  .  \|   |   | |  ||     ||  |  | |  | |  .  |
+  |__|  |__|__||_____||__|\_||___|___||____|\___/ |__|__||____||__|\_|
+                                                                      
 Industrial Automation inspired programming languages directly converted to Arduino C code.
 
 # Features
-- Each block have multiple inputs (on the left) and outputs (on the right)
-- Each block contain two code sections: Setup code and Loop code
-- Each block can contain other blocks, that contains other blocks, that contains oth....... Segmentation Fault
+- Direct generation of human readable C code compatible with the Arduino HAL
+- Export / Import in JSON format
 
+Each block:
+- Can have multiple inputs (on the left) and outputs (on the right)
+- Contain two code sections: Setup code and Loop code
+- Contain a structure used for data, like an instance of a class
+- Can contain other blocks, that contains other blocks, that contains oth....... Segmentation Fault
 
 # Languages
 Thermonik get deep inspiration from Industrial Automation languages like FDB, GRAPH and LADDER.
 But optimized to be more appealing and easy to use for hobbiest geeks.
+It also include direct C coding (much envied in Automation).
+
+So, to recap.
+A block can be created in:
 
 ## (WL) Wiring Language
 (WL is the equivalent of FDB for Industrial Automation)
@@ -34,6 +41,12 @@ It uses Steps and Transitions to allow a sequential logic.
 Each Step remains active until the following Transition is satisfied.
 
 Transition code is written in WL.
+
+[example images]
+
+## (C) Direct C code
+
+You can use normal trusted C code to allow advanced functions and full backward compatibility with examples, tutorials, old projects and Copy&Paste from StackOverflow tecnique .
 
 [example images]
 
