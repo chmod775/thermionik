@@ -1,6 +1,7 @@
 // ########################
 let TODO = false;
 // ########################
+
 class Plug {
   constructor(block, name, type, configs) {
     this.block = block;
@@ -20,7 +21,7 @@ class Plug {
 
 class BlockData {
   constructor() {
-    this.elements = []; // EXAMPLE: { name: 'cnt', type: 'uint32_t' }
+    this.elements = []; // EXAMPLE: { name: 'cnt', type: 'uint32_t', init: 0 }
     this.code = null;
   }
 
@@ -70,7 +71,8 @@ class Block {
     };
 
     this.name = 'ANONYMOUS';
-    this.configs = {};
+    this.configs = {}; // Impact only on code generation, so JS level
+    this.settings = {}; // Will be in final code
 
     this._type = 'TRUMPET';
 
@@ -100,6 +102,10 @@ class Block {
 
   SetConfigs(configs) {
     this.configs = configs;
+  }
+
+  SetSettings(settings) {
+    this.settings = settings;
   }
 
   IsEqual(block) { return TODO; }

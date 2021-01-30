@@ -50,7 +50,15 @@ class CBlock extends Block {
     }
     let genOutputsName = `_s_outputs_${this.name}`;
     let genOutputsStructure = mainGenerator.GenerateStructure(genOutputsName, genOutputsElements);
- 
+
+    // Generate instance structure
+    let genInstanceElements = [
+      { name: 'data', type: genDataName },
+      { name: 'outputs', type: genOutputsName }
+    ];
+    let genInstanceName = `_s_instance_${this.name}`;
+    let genInstanceStructure = mainGenerator.GenerateStructure(genInstanceName, genInstanceElements);
+
     // Generate setup code
     let genParsedSetupCode = Helpers.ParseTemplate(this.setupCode.content, this.configs, this.setupCode.asJS);
     let genSetupCodeParameters = [];
@@ -60,10 +68,10 @@ class CBlock extends Block {
     });
 
     let genSetupCodeFunction = mainGenerator.GenerateFunction(
-      `setup_${this.name}`, // Name
-      'void', // Return type
+      `setup_${this.name}`,   // Name
+      'void',                 // Return type
       genSetupCodeParameters, // Parameters
-      genParsedSetupCode // LoopCode
+      genParsedSetupCode      // LoopCode
     );
 
     // Generate loop code
@@ -87,24 +95,28 @@ class CBlock extends Block {
     }
 
     let genLoopCodeFunction = mainGenerator.GenerateFunction(
-      `loop_${this.name}`, // Name
-      'void', // Return type
-      genLoopCodeParameters, // Parameters
-      genParsedLoopCode // LoopCode
+      `loop_${this.name}`,    // Name
+      'void',                 // Return type
+      genLoopCodeParameters,  // Parameters
+      genParsedLoopCode       // LoopCode
     );
 
     // Generate instance arrays
-    let genDataArray = mainGenerator.GenerateArray(`data_${this.name}`, genDataName, `COUNT_${this.name}`);
-    let genOutputsArray = mainGenerator.GenerateArray(`outputs_${this.name}`, genOutputsName, `COUNT_${this.name}`);
+    let genInstancesArray = mainGenerator.GenerateArray(`instances_${this.name}`, genInstanceName, `COUNT_${this.name}`);
 
+    // Join generated parts
     return [
       genHeaderComment,
+      
       genDataStructure,
       genOutputsStructure,
+      
+      genInstanceStructure,
+
       genSetupCodeFunction,
       genLoopCodeFunction,
-      genDataArray,
-      genOutputsArray
+
+      genInstancesArray
     ].join('\n');
   }
 }
