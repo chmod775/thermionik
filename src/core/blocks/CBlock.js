@@ -9,7 +9,7 @@ class CBlock extends Block {
   constructor(name) {
     super();
 
-    this.Create(name, { inputs: [], outputs: [] }, {});
+    this.Create(name, [], {});
   
     this._type = 'C';
 
@@ -34,7 +34,7 @@ class CBlock extends Block {
 
   GenerateCode() {
     // Generate header comment
-    let genHeaderComment = mainGenerator.GenerateComment(`##### block ${this.name} by ${this.configs.author || 'Anonymous'} #####`);
+    let genHeaderComment = mainGenerator.GenerateComment(`##### block ${this.name} by ${this.author || 'Anonymous'} #####`);
 
     // Generate data structure
     let genDataName = `_s_data_${this.name}`;
@@ -42,7 +42,7 @@ class CBlock extends Block {
 
     // Generate outputs structure
     let genOutputsElements = [];
-    for (var po of this.plugs.outputs) {
+    for (var po of this.plugs.filter(p => p.isPlate)) {
       genOutputsElements.push( {
         name: po.name,
         type: po.type
@@ -81,13 +81,13 @@ class CBlock extends Block {
       name: 'data',
       type: `${genDataName}*`
     });
-    for (var pi of this.plugs.inputs) {
+    for (var pi of this.plugs.filter(p => !p.isPlate)) {
       genLoopCodeParameters.push({
         name: pi.name,
         type: pi.type
       });
     }
-    for (var po of this.plugs.outputs) {
+    for (var po of this.plugs.filter(p => p.isPlate)) {
       genLoopCodeParameters.push({
         name: po.name,
         type: `${po.type}*`

@@ -9,6 +9,10 @@ typedef struct {
 typedef struct {
   bool out;
 } s_outputs_oneshot;
+typedef struct {
+  s_data_oneshot data;
+  s_outputs_oneshot outputs;
+} s_instance_oneshot;
 void setup_oneshot(s_data_oneshot *data) {
   data->lastval = false;
 }
@@ -17,8 +21,7 @@ void loop_oneshot(s_data_oneshot *data, bool in, bool *out) {
   data->lastval = in;
 }
 #define COUNT_oneshot 1
-s_data_oneshot data_oneshot[COUNT_oneshot];
-s_outputs_oneshot outputs_oneshot[COUNT_oneshot];
+s_instance_oneshot instances_oneshot[COUNT_oneshot];
 
 /* counter by Michele Trombetta*/
 typedef struct {
@@ -50,3 +53,7 @@ void loop() {
   loop_oneshot(&data_oneshot[0], false, &outputs_oneshot[0].out);
   loop_counter(&data_counter[0], outputs_oneshot[0].out, &outputs_counter[0].out);
 }
+
+
+
+

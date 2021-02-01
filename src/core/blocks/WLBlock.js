@@ -1,48 +1,67 @@
 class WLBlock extends Block {
   constructor(name) {
-    this.Create(name, { inputs: [], outputs: [] }, {});
+    super();
+
+    this.Create(name, [], {});
   
     this._type = 'WL';
-  }
 
-}
-
-class WLWire {
-  constructor(fromPlug, toPlug) {
-    this.fromPlug = fromPlug;
-    this.toPlugs = [toPlug];
-  }
-
-  ConnectPlug(toPlug) {
-    this.toPlugs.push(toPlug);
-  }
-
-  DisconnectPlug(toPlug) {
-    this.toPlugs = this.toPlugs.filter(t => !t.IsEqual(toPlug));
-  }
-
-  ReplacePlug(toPlug, destPlug) {
-    let pIdx = this.toPlugs.findIndex(t => t.IsEqual(destPlug));
-    this.toPlugs[pIdx] = toPlug;
-  }
-
-  SetSourcePlug(fromPlug) {
-    this.fromPlug = fromPlug;
-  }
-
-  Clear() {
-    this.fromPlug = null;
-    this.toPlugs = [];
-  }
-}
-
-class WLCompiler {
-  constructor() {
     this.blocks = [];
     this.wires = [];
-
-
   }
 
+  AddBlock(block) {
+    if (Array.isArray(block))
+      this.blocks = this.blocks.concat(block);
+    else
+      this.blocks.push(block);
+  }
 
-} 
+  RemoveBlock(block) {
+    this.blocks = this.blocks.filter(t => !t.IsEqual(block));
+  }
+
+  ConnectPlugs(plugs) {
+    var foundPlates = plugs.filter(p => p.isPlate);
+    if (foundPlates.length < 1) { console.error("Plate not found."); return null; }
+    if (foundPlates.length > 1) { console.error("Multiple Plates found."); return null; }
+
+    let foundPlate = foundPlates[0];
+
+    var foundGrids = plugs.filter(p => !p.isPlate);
+    if (foundGrids.length < 1) { console.error("No Grids found."); return null; }
+
+    var plateWire = foundPlate.wire;
+    if (plateWire == null)
+      plateWire = new Wire(foundPlate);
+
+    for (var pg of foundGrids)
+      plateWire.ConnectGrid(pg);
+
+    // Add to wires list
+    if (!this.wires.includes(plateWire))
+    this.wires.push(plateWire);
+    
+    return plateWire;
+  }
+
+  GenerateCode() {
+    let genParts = [];
+
+    for (var b of this.blocks) {
+      var cacheKey = JSON.stringify(b.configs);
+
+      b.constructor._cache = b.constructor._cache || {};
+      var blockCode = b.constructor._cache[cacheKey];
+
+      if (!blockCode) {
+        blockCode = b.GenerateCode();
+        b.constructor._cache[cacheKey] = blockCode;
+
+        genParts.push(blockCode);
+      }      
+    }
+
+    return genParts.join('\n');
+  }
+}

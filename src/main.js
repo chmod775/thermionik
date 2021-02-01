@@ -6,9 +6,8 @@ class Block_OneShot extends CBlock {
 
     this.SetPlugs(
       [
-        Plug.Create('in', 'bool')
-      ], [
-        Plug.Create('out', 'bool')
+        PlugGrid.Create('in', 'bool'),
+        PlugPlate.Create('out', 'bool')
       ]
     );
 
@@ -47,11 +46,11 @@ class Block_Counter extends CBlock {
 
     this.SetPlugs(
       [
-        Plug.Create('inc', 'bool'),
-        Plug.Create('reset', 'bool')
-      ], [
-        Plug.Create('actValue', 'int'),
-        Plug.Create('atTarget', 'bool')
+        PlugGrid.Create('inc', 'bool'),
+        PlugGrid.Create('reset', 'bool'),
+
+        PlugPlate.Create('actValue', 'int'),
+        PlugPlate.Create('atTarget', 'bool')
       ]
     );
 
@@ -73,11 +72,23 @@ class Block_Counter extends CBlock {
       `
       data->value = 0;
       `,
-      true
+      false
     );
   }
 }
 
-let mainBlock = new Block_OneShot();
+let b1 = new Block_OneShot();
+let b2 = new Block_Counter();
+let b3 = new Block_Counter();
+
+let mainBlock = new WLBlock("main");
+
+mainBlock.AddBlock([b1, b2, b3]);
+
+mainBlock.ConnectPlugs([
+  b1.FindPlugByName("out"),
+  b2.FindPlugByName("inc"),
+  b3.FindPlugByName("reset")
+]);
+
 console.log(mainBlock.GenerateCode());
-console.log(mainBlock.GenerateCountConst(10));
