@@ -1,14 +1,14 @@
 class WLBlock extends Block {
   constructor(name) {
-    super();
-
-    this.Create(name, [], {});
+    super(name);
   
     this._type = 'WL';
 
     this.blocks = [];
     this.wires = [];
   }
+
+  Create() {}
 
   AddBlock(block) {
     if (Array.isArray(block))

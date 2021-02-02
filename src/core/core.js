@@ -128,7 +128,9 @@ class BlockData {
 }
 
 class Block {
-  constructor() {
+  constructor(name) {
+    this.name = name;
+
     this.plugs = [];
 
     this.gui = {
@@ -137,7 +139,6 @@ class Block {
       svgPlugs: []
     };
 
-    this.name = 'ANONYMOUS';
     this.configs = {}; // Impact only on code generation, so JS level
     this.settings = {}; // Will be in final code
 
@@ -148,13 +149,13 @@ class Block {
     this.data = new BlockData();
   }
 
-  Create(name, plugs, configs) {
-    this.name = name;
-    this.configs = configs;
-
-    this.SetPlugs(plugs);
+  static Create(configs) {
+    let ret = new this();
+    ret.SetConfigs(configs || {});
+    return ret;
   }
 
+  /* ### Setters ### */
   SetData(data) {
     this.data = data;
   }
@@ -165,6 +166,23 @@ class Block {
       p.SetBlock(this);
   }
 
+  SetConfigs(configs) {
+    this.configs = configs;
+    this.Init();
+  }
+
+  SetSettings(settings) {
+    this.settings = settings;
+  }
+
+  /* ### Utilities ### */
+  GetGridPlugs() {
+    return this.plugs.where(p => !p.isPlate);
+  }
+  GetPlatePlugs() {
+    return this.plugs.where(p => p.isPlate);
+  }
+
   FindPlugByName(name) {
     for (var p of this.plugs)
       if (p.name.toLowerCase() == name.toLowerCase())
@@ -173,19 +191,13 @@ class Block {
     return null;
   }
 
-  SetConfigs(configs) {
-    this.configs = configs;
-  }
-
-  SetSettings(settings) {
-    this.settings = settings;
-  }
-
   IsEqual(block) {
     return (this == block);
   }
 
-  GenerateCode() { return TODO; }
+  /* ### Requirements ### */
+  Init() { console.error("Create NOT IMPLEMENTED."); return TODO; }
+  GenerateCode() { ole.error("GenerateCode NOT IMPLEMENTED."); return TODO; }
 }
 
 class Compiler {

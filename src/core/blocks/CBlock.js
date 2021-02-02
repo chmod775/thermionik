@@ -7,15 +7,15 @@ class CBlockCode {
 
 class CBlock extends Block {
   constructor(name) {
-    super();
+    super(name);
 
-    this.Create(name, [], {});
-  
     this._type = 'C';
 
     this.setupCode = new CBlockCode();
     this.loopCode = new CBlockCode();
   }
+
+  Create() {}
 
   SetSetupCode(code, asJS) {
     this.setupCode.content = code;
@@ -60,6 +60,7 @@ class CBlock extends Block {
     let genInstanceStructure = mainGenerator.GenerateStructure(genInstanceName, genInstanceElements);
 
     // Generate setup code
+    let genSetupCodeName = `setup_${this.name}`;
     let genParsedSetupCode = Helpers.ParseTemplate(this.setupCode.content, this.configs, this.setupCode.asJS);
     let genSetupCodeParameters = [];
     genSetupCodeParameters.push({
@@ -68,13 +69,14 @@ class CBlock extends Block {
     });
 
     let genSetupCodeFunction = mainGenerator.GenerateFunction(
-      `setup_${this.name}`,   // Name
+      genSetupCodeName,   // Name
       'void',                 // Return type
       genSetupCodeParameters, // Parameters
       genParsedSetupCode      // LoopCode
     );
 
     // Generate loop code
+    let genLoopCodeName = `loop_${this.name}`;
     let genParsedLoopCode = Helpers.ParseTemplate(this.loopCode.content, this.configs, this.loopCode.asJS);
     let genLoopCodeParameters = [];
     genLoopCodeParameters.push({
@@ -95,7 +97,7 @@ class CBlock extends Block {
     }
 
     let genLoopCodeFunction = mainGenerator.GenerateFunction(
-      `loop_${this.name}`,    // Name
+      genLoopCodeName,    // Name
       'void',                 // Return type
       genLoopCodeParameters,  // Parameters
       genParsedLoopCode       // LoopCode
@@ -105,7 +107,7 @@ class CBlock extends Block {
     let genInstancesArray = mainGenerator.GenerateArray(`instances_${this.name}`, genInstanceName, `COUNT_${this.name}`);
 
     // Join generated parts
-    return [
+    let genCode = [
       genHeaderComment,
       
       genDataStructure,
@@ -118,5 +120,18 @@ class CBlock extends Block {
 
       genInstancesArray
     ].join('\n');
+
+    return {
+      code: genCode,
+      names: {
+        dataStructure: genDataName,
+        outputsStructure: genOutputsName,
+        
+        instanceStructure: genInstanceName,
+
+        setupFunction: genSetupCodeName,
+        loopFunction: genLoopCodeName
+      }
+    }
   }
 }

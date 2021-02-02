@@ -44,6 +44,13 @@ Transition code is written in WL.
 
 [example images]
 
+## (SL) Switches Language
+(SL is the equivalent of LADDER for Industrial Automation)
+
+It uses Coils and Switches in a left to right ordered circuit diagram.
+
+[example images]
+
 ## (C) Direct C code
 
 You can use normal trusted C code to allow advanced functions and full backward compatibility with examples, tutorials, old projects and Copy&Paste from StackOverflow tecnique .
@@ -54,22 +61,27 @@ You can use normal trusted C code to allow advanced functions and full backward 
 The Block class is composed as follow:
 
 	Block {
-		interface {
-			inputs // Dictionary of input classes
-			outputs // Dictionary of outputs classes
+		name	// Self explanatory
+		guid	// To avoid goind crazy during debugging
+
+		plugs {
+			grids // Dictionary of input classes, in respect of all old vacuum tubes
+			plates // Dictionary of outputs classes, in respect of all old vacuum tubes
 		}
 		
-		configs // Dictionary of all the block configs
+		configs // Dictionary of all the block configs used for code generation
+		settings // Dictionary of all the block settings written in the final code as constants
+
+		data // Static data used in code, it will be generated to code structure
 
 		gui {
 			svgBody // SVG object of the block body
 			svgName // SVG object of the name label
 			svgInterfaces // List of SVG objects of the interfaces (inputs, outputs)
 		}
+
+		Create() // Block initializzation (like creating plugs), called on construct or on configs change
+		
 	}
 
-Hardware is abstracted by the use of a Board class, composed as follow:
-
-	Board {
-	}
 
