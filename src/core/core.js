@@ -89,6 +89,17 @@ class PlugGrid extends Plug {
   }
 }
 
+class BlockCode {
+  constructor(name, code) {
+    this.name = name;
+    this.code = code;
+  }
+
+  static Create(name, code) {
+    return new BlockCode(name, code);
+  }
+}
+
 class BlockData {
   constructor() {
     this.elements = []; // EXAMPLE: { name: 'cnt', type: 'uint32_t', init: 0 }
@@ -177,10 +188,10 @@ class Block {
 
   /* ### Utilities ### */
   GetGridPlugs() {
-    return this.plugs.where(p => !p.isPlate);
+    return this.plugs.filter(p => !p.isPlate);
   }
   GetPlatePlugs() {
-    return this.plugs.where(p => p.isPlate);
+    return this.plugs.filter(p => p.isPlate);
   }
 
   FindPlugByName(name) {
@@ -195,9 +206,19 @@ class Block {
     return (this == block);
   }
 
+  Hash() {
+    var hashInt = Helpers.hashString(JSON.stringify(this.configs)) - 0xf62;
+    return (hashInt > 0) ? hashInt.toString(16) : '';
+  }
+
+  UniqueName() {
+    let hash = this.Hash();
+    return this.name + ((hash.length > 0) ? ('_' + hash) : '');
+  }
+
   /* ### Requirements ### */
   Init() { console.error("Create NOT IMPLEMENTED."); return TODO; }
-  GenerateCode() { ole.error("GenerateCode NOT IMPLEMENTED."); return TODO; }
+  GenerateSource() { ole.error("GenerateSource NOT IMPLEMENTED."); return TODO; }
 }
 
 class Compiler {

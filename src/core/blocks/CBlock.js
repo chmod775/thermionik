@@ -10,45 +10,35 @@ class CBlock extends Block {
     super(name);
 
     this._type = 'C';
-
-    this.setupCode = new CBlockCode();
-    this.loopCode = new CBlockCode();
   }
 
   Create() {}
 
-  SetSetupCode(code, asJS) {
-    this.setupCode.content = code;
-    this.setupCode.asJS = asJS;
-  }
-
-  SetLoopCode(code, asJS) {
-    this.loopCode.content = code;
-    this.loopCode.asJS = asJS;
-  }
-
   GenerateCountConst(count) {
-    let genCountConst = mainGenerator.GenerateConst(`COUNT_${this.name}`, 'int', count);
+    let uName = this.UniqueName();
+    let genCountConst = mainGenerator.GenerateConst(`COUNT_${uName}`, 'int', count);
     return genCountConst;
   }
 
-  GenerateCode() {
+  GenerateSource() {
+    let uName = this.UniqueName();
+
     // Generate header comment
-    let genHeaderComment = mainGenerator.GenerateComment(`##### block ${this.name} by ${this.author || 'Anonymous'} #####`);
+    let genHeaderComment = mainGenerator.GenerateComment(`##### block ${uName} by ${this.author || 'Anonymous'} #####`);
 
     // Generate data structure
-    let genDataName = `_s_data_${this.name}`;
+    let genDataName = `_s_data_${uName}`;
     let genDataStructure = this.data.GenerateStructure(genDataName);
 
     // Generate outputs structure
     let genOutputsElements = [];
-    for (var po of this.plugs.filter(p => p.isPlate)) {
+    for (var po of this.GetPlatePlugs()) {
       genOutputsElements.push( {
         name: po.name,
         type: po.type
       });
     }
-    let genOutputsName = `_s_outputs_${this.name}`;
+    let genOutputsName = `_s_outputs_${uName}`;
     let genOutputsStructure = mainGenerator.GenerateStructure(genOutputsName, genOutputsElements);
 
     // Generate instance structure
@@ -56,12 +46,12 @@ class CBlock extends Block {
       { name: 'data', type: genDataName },
       { name: 'outputs', type: genOutputsName }
     ];
-    let genInstanceName = `_s_instance_${this.name}`;
+    let genInstanceName = `_s_instance_${uName}`;
     let genInstanceStructure = mainGenerator.GenerateStructure(genInstanceName, genInstanceElements);
 
     // Generate setup code
-    let genSetupCodeName = `setup_${this.name}`;
-    let genParsedSetupCode = Helpers.ParseTemplate(this.setupCode.content, this.configs, this.setupCode.asJS);
+    let genSetupCodeName = `setup_${uName}`;
+    let genSetupCode = (this.SetupCode instanceof Function) ? this.SetupCode() : this.SetupCode;
     let genSetupCodeParameters = [];
     genSetupCodeParameters.push({
       name: 'data',
@@ -72,24 +62,24 @@ class CBlock extends Block {
       genSetupCodeName,   // Name
       'void',                 // Return type
       genSetupCodeParameters, // Parameters
-      genParsedSetupCode      // LoopCode
+      genSetupCode || ''      // SetupCode
     );
 
     // Generate loop code
-    let genLoopCodeName = `loop_${this.name}`;
-    let genParsedLoopCode = Helpers.ParseTemplate(this.loopCode.content, this.configs, this.loopCode.asJS);
+    let genLoopCodeName = `loop_${uName}`;
+    let genLoopCode = (this.LoopCode instanceof Function) ? this.LoopCode() : this.LoopCode;
     let genLoopCodeParameters = [];
     genLoopCodeParameters.push({
       name: 'data',
       type: `${genDataName}*`
     });
-    for (var pi of this.plugs.filter(p => !p.isPlate)) {
+    for (var pi of this.GetGridPlugs()) {
       genLoopCodeParameters.push({
         name: pi.name,
         type: pi.type
       });
     }
-    for (var po of this.plugs.filter(p => p.isPlate)) {
+    for (var po of this.GetPlatePlugs()) {
       genLoopCodeParameters.push({
         name: po.name,
         type: `${po.type}*`
@@ -100,14 +90,15 @@ class CBlock extends Block {
       genLoopCodeName,    // Name
       'void',                 // Return type
       genLoopCodeParameters,  // Parameters
-      genParsedLoopCode       // LoopCode
+      genLoopCode || ''       // LoopCode
     );
 
     // Generate instance arrays
-    let genInstancesArray = mainGenerator.GenerateArray(`instances_${this.name}`, genInstanceName, `COUNT_${this.name}`);
+    let genInstancesName = `instances_${uName}`;
+    let genInstancesArray = mainGenerator.GenerateArray(genInstancesName, genInstanceName, `COUNT_${uName}`);
 
     // Join generated parts
-    let genCode = [
+    let genSource = [
       genHeaderComment,
       
       genDataStructure,
@@ -122,16 +113,22 @@ class CBlock extends Block {
     ].join('\n');
 
     return {
-      code: genCode,
-      names: {
-        dataStructure: genDataName,
-        outputsStructure: genOutputsName,
+      source: genSource,
+      codes: {
+        dataStructure: BlockCode.Create(genDataName, genDataStructure),
+        outputsStructure: BlockCode.Create(genOutputsName, genOutputsStructure),
         
-        instanceStructure: genInstanceName,
+        instanceStructure: BlockCode.Create(genInstanceName, genInstanceStructure),
 
-        setupFunction: genSetupCodeName,
-        loopFunction: genLoopCodeName
+        setupFunction: BlockCode.Create(genSetupCodeName, genSetupCodeFunction),
+        loopFunction: BlockCode.Create(genLoopCodeName, genLoopCodeFunction),
+
+        instancesArray: BlockCode.Create(genInstancesName, genInstancesArray)
       }
     }
   }
+
+  /* ### Requirements ### */
+  SetupCode() { console.error("SetupCode NOT IMPLEMENTED."); return TODO; }
+  LoopCode() { console.error("LoopCode NOT IMPLEMENTED."); return TODO; }
 }

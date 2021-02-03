@@ -1,5 +1,7 @@
 let mainGenerator = new CGenerator();
 
+let dependencies = {};
+
 class Block_OneShot extends CBlock {
   constructor() {
     super("oneshot");
@@ -17,15 +19,15 @@ class Block_OneShot extends CBlock {
       { name: 'lastval', type: 'bool' }
     ]));
 
-    this.SetLoopCode(
+    this.LoopCode =
       `
       *out = (in && !data->lastval);
       data->lastval = in;
       `,
       false
-    );
+    ;
     
-    this.SetSetupCode(
+    this.SetupCode =
       `
       var ret = [];
       for (var i = 0; i < 50; i++)
@@ -33,7 +35,7 @@ class Block_OneShot extends CBlock {
       return ret.join('\\n');
       `,
       true
-    );
+    ;
   }
 
 
@@ -65,7 +67,7 @@ class Block_Counter extends CBlock {
       { name: 'value', type: 'int' }
     ]));
 
-    this.SetLoopCode(
+    this.LoopCode =
       `
       if (inc)
         data->value++;
@@ -73,15 +75,18 @@ class Block_Counter extends CBlock {
       *atTarget = (data->value >= data->target);
       `,
       false
-    );
+    ;
 
-    this.SetSetupCode(
+    this.SetupCode =
       `
       data->value = 0;
       `,
       false
-    );
+    ;
   }
+
+  SetupCode() {}
+  LoopCode() {}
 }
 
 class Block_And extends CBlock {
@@ -112,11 +117,13 @@ let b1 = Block_OneShot.Create();
 let b2 = Block_Counter.Create();
 let b3 = Block_Counter.Create();
 
-let b4 = Block_And.Create({ size: 10 });
+let b4a = Block_And.Create({ size: 10 });
+let b4b = Block_And.Create({ size: 10 });
+let b4c = Block_And.Create({ size: 2 });
 
 let mainBlock = new WLBlock("main");
 
-mainBlock.AddBlock([b1, b2, b3]);
+mainBlock.AddBlock([b1, b2, b3, b4a, b4b, b4c]);
 
 mainBlock.ConnectPlugs([
   b1.FindPlugByName("out"),
@@ -124,4 +131,4 @@ mainBlock.ConnectPlugs([
   b3.FindPlugByName("reset")
 ]);
 
-console.log(b1.GenerateCode().code);
+console.log(mainBlock.GenerateSource().source);
