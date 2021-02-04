@@ -10,14 +10,14 @@ class Block_OneShot extends CBlock {
   Init() {
     this.SetPlugs(
       [
-        PlugGrid.Create('in', 'bool'),
-        PlugPlate.Create('out', 'bool')
+        PlugGrid.Create('in', 'bool', 'true'),
+        PlugPlate.Create('out', 'bool', 'false')
       ]
     );
 
-    this.SetData(BlockData.FromElements([
+    this.SetData([
       { name: 'lastval', type: 'bool' }
-    ]));
+    ]);
 
     this.LoopCode =
       `
@@ -55,17 +55,17 @@ class Block_Counter extends CBlock {
 
     this.SetPlugs(
       [
-        PlugGrid.Create('inc', 'bool'),
-        PlugGrid.Create('reset', 'bool'),
+        PlugGrid.Create('inc', 'bool', 'false'),
+        PlugGrid.Create('reset', 'bool', 'false'),
 
-        PlugPlate.Create('actValue', 'int'),
-        PlugPlate.Create('atTarget', 'bool')
+        PlugPlate.Create('actValue', 'int', '0'),
+        PlugPlate.Create('atTarget', 'bool', 'false')
       ]
     );
 
-    this.SetData(BlockData.FromElements([
+    this.SetData([
       { name: 'value', type: 'int' }
-    ]));
+    ]);
 
     this.LoopCode =
       `
@@ -97,9 +97,9 @@ class Block_And extends CBlock {
   Init() {
     let nGrids = Math.max(+this.configs.size, 2);
 
-    let plugs = [PlugPlate.Create('out', 'bool')];
+    let plugs = [PlugPlate.Create('out', 'bool', 'false')];
     for (var gIdx = 0; gIdx < nGrids; gIdx++)
-      plugs.push(PlugGrid.Create(`in_${gIdx}`, 'bool'));
+      plugs.push(PlugGrid.Create(`in_${gIdx}`, 'bool', 'false'));
 
     this.SetPlugs(plugs);
   }
@@ -129,6 +129,11 @@ mainBlock.ConnectPlugs([
   b1.FindPlugByName("out"),
   b2.FindPlugByName("inc"),
   b3.FindPlugByName("reset")
+]);
+
+mainBlock.ConnectPlugs([
+  b2.FindPlugByName("reset"),
+  b4c.FindPlugByName("out")
 ]);
 
 console.log(mainBlock.GenerateSource().source);

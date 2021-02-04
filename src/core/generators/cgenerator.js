@@ -50,4 +50,21 @@ class CGenerator extends Generator {
   GenerateComment(content) {
     return `/* ${content} */`;
   }
+
+  GenerateFunctionCall(name, args, pretty) {
+    if (pretty)
+      return `${name}(\n\t${args.join(',\n\t')}\n);`;
+    else
+      return `${name}(${args.join(',')});`;
+  }
+
+  AccessIndirect(parent, children) {
+    return `${parent}->${children}`;
+  }
+  AccessDirect(parent, children) {
+    return `${parent}.${children}`;
+  }
+  GetReference(element) {
+    return `&${element}`;
+  }
 }

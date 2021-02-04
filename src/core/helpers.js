@@ -1,3 +1,5 @@
+uuidCnt = 0;
+
 class Helpers {
   static ParseTemplate(template, placeholders, evalAsJS) {
     if (evalAsJS) {
@@ -18,12 +20,19 @@ class Helpers {
       return target;
   }
 
+  /*
   static uuidv4() {
     return "10000000_1000_4000_8000_100000000000".replace(/[018]/g, c =>
       (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
     );
   }
+  */
 
+  static uuidv4() {
+    uuidCnt++;
+    return uuidCnt;
+  }
+  
   static hashString(str) {
     var hash = 0, i, chr;
     for (i = 0; i < str.length; i++) {

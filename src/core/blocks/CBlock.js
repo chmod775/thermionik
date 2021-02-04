@@ -28,7 +28,7 @@ class CBlock extends Block {
 
     // Generate data structure
     let genDataName = `_s_data_${uName}`;
-    let genDataStructure = this.data.GenerateStructure(genDataName);
+    let genDataStructure = mainGenerator.GenerateStructure(genDataName, this.data);
 
     // Generate outputs structure
     let genOutputsElements = [];

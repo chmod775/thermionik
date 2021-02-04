@@ -47,10 +47,11 @@ class Wire {
 }
 
 class Plug {
-  constructor(block, name, type, configs) {
+  constructor(block, name, type, init, configs) {
     this.block = block;
     this.name = name;
     this.type = type;
+    this.init = init;
     this.configs = configs || {};
 
     this.wire = null;
@@ -75,15 +76,15 @@ class Plug {
 }
 
 class PlugPlate extends Plug {
-  static Create(name, type, configs) {
-    let ret = new Plug(null, name, type, configs);
+  static Create(name, type, init, configs) {
+    let ret = new Plug(null, name, type, init, configs);
     ret.isPlate = true;
     return ret;
   }
 }
 class PlugGrid extends Plug {
-  static Create(name, type, configs) {
-    let ret = new Plug(null, name, type, configs);
+  static Create(name, type, init, configs) {
+    let ret = new Plug(null, name, type, init, configs);
     ret.isPlate = false;
     return ret;
   }
@@ -157,7 +158,7 @@ class Block {
 
     this.guid = Helpers.uuidv4();
 
-    this.data = new BlockData();
+    this.data = [];
   }
 
   static Create(configs) {
@@ -228,11 +229,16 @@ class Compiler {
 class Generator {
   constructor() {}
 
-  GenerateStructure(name, elements) { return null; }
-  GenerateFunction(name, ret, parameters, code) { return null; }
-  GenerateArray(name, type, size) { return null; }
-  GenerateConst(name, type, value) { return null; }
-  GenerateComment(content) { return null; }
+  GenerateStructure(name, elements) { console.error("GenerateStructure NOT IMPLEMENTED."); return null; }
+  GenerateFunction(name, ret, parameters, code) { console.error("GenerateFunction NOT IMPLEMENTED."); return null; }
+  GenerateArray(name, type, size) { console.error("GenerateArray NOT IMPLEMENTED."); return null; }
+  GenerateConst(name, type, value) { console.error("GenerateConst NOT IMPLEMENTED."); return null; }
+  GenerateComment(content) { console.error("GenerateComment NOT IMPLEMENTED."); return null; }
+  GenerateFunctionCall(name, args) { console.error("GenerateFunctionCall NOT IMPLEMENTED."); return null; }
+
+  AccessIndirect(parent, children) { console.error("AccessIndirect NOT IMPLEMENTED."); return null; }
+  AccessDirect(parent, children) { console.error("AccessDirect NOT IMPLEMENTED."); return null; }
+  GetReference(element) { console.error("GetReference NOT IMPLEMENTED."); return null; }
 }
 
 class Board {

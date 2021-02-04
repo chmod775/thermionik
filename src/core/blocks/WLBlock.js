@@ -51,10 +51,6 @@ class WLBlock extends Block {
     // Generate header comment
     let genHeaderComment = mainGenerator.GenerateComment(`##### block ${uName} by ${this.author || 'Anonymous'} #####`);
 
-    // Generate data structure
-    let genDataName = `_s_data_${uName}`;
-    let genDataStructure = this.data.GenerateStructure(genDataName);
-
     // Generate outputs structure
     let genOutputsElements = [];
     for (var po of this.GetPlatePlugs()) {
@@ -66,14 +62,15 @@ class WLBlock extends Block {
     let genOutputsName = `_s_outputs_${uName}`;
     let genOutputsStructure = mainGenerator.GenerateStructure(genOutputsName, genOutputsElements);
 
-    // Generate instance structure
-    let genInstanceElements = [
-      { name: 'data', type: genDataName },
-      { name: 'outputs', type: genOutputsName }
-    ];
+    let genChildrensDataElements = [];
+    let genChildrensSetupCall = [];
+    let genChildrensLoopCall = [];
 
     // Scan all blocks inside
-    for (var b of this.blocks) {
+    for (var bIdx in this.blocks) {
+      let b = this.blocks[bIdx];
+      let bId = `b_${b.guid}`;
+
       var cacheKey = b.UniqueName();
 
       // Generate dependencies
@@ -86,20 +83,141 @@ class WLBlock extends Block {
       }
 
       // Add to instance structure
-      genInstanceElements.push({
-        name: b.guid,
+      genChildrensDataElements.push({
+        name: bId,
         type: blockCode.codes.instanceStructure.name
-      })
+      });
+
+      let helpDataAccess = mainGenerator.AccessIndirect('data', bId);
+
+      // Generate setup function call
+      let genSetupCallArgs = [
+        mainGenerator.GetReference(
+          mainGenerator.AccessDirect(
+            helpDataAccess,
+            'data'
+          )
+        )
+      ];
+      let genSetupCall = mainGenerator.GenerateFunctionCall(blockCode.codes.setupFunction.name, genSetupCallArgs);
+      genChildrensSetupCall.push(genSetupCall);
+
+      // Generate loop function call
+      let genLoopCallArgs = [
+        mainGenerator.GetReference(
+          mainGenerator.AccessDirect(
+            helpDataAccess,
+            'data'
+          )
+        )
+      ];
+
+      for (var pi of b.GetGridPlugs()) {
+        let plateConnected = pi.wire ? pi.wire.platePlug : null;
+        
+        if (plateConnected) {
+          let plateConnected_bId = `b_${plateConnected.block.guid}`;
+
+          genLoopCallArgs.push(
+            mainGenerator.AccessDirect(
+              mainGenerator.AccessDirect(
+                mainGenerator.AccessIndirect(
+                  'data',
+                  plateConnected_bId
+                ),
+                'outputs'
+              ),
+              plateConnected.name
+            )
+          );
+        } else {
+          genLoopCallArgs.push(pi.init);
+        }
+      }
+      for (var po of b.GetPlatePlugs()) {
+        genLoopCallArgs.push(
+          mainGenerator.GetReference(
+            mainGenerator.AccessDirect(
+              mainGenerator.AccessDirect(
+                helpDataAccess,
+                'outputs'
+              ),
+              po.name
+            )
+          )
+        );
+      }
+
+      let genLoopCall = mainGenerator.GenerateFunctionCall(blockCode.codes.loopFunction.name, genLoopCallArgs, true);
+      genChildrensLoopCall.push(genLoopCall);
     }
+    
+    // Generate data structure
+    let genDataName = `_s_data_${uName}`;
+    let genDataStructure = mainGenerator.GenerateStructure(genDataName, this.data.concat(genChildrensDataElements));
+
+    // Generate instance structure
+    let genInstanceElements = [
+      { name: 'data', type: genDataName },
+      { name: 'outputs', type: genOutputsName }
+    ];
 
     let genInstanceName = `_s_instance_${uName}`;
     let genInstanceStructure = mainGenerator.GenerateStructure(genInstanceName, genInstanceElements);
 
+    // Generate setup code
+    let genSetupCodeName = `setup_${uName}`;
+    let genSetupCode = genChildrensSetupCall.join('\n');
+    let genSetupCodeParameters = [];
+    genSetupCodeParameters.push({
+      name: 'data',
+      type: `${genDataName}*`
+    });
+
+    let genSetupCodeFunction = mainGenerator.GenerateFunction(
+      genSetupCodeName,   // Name
+      'void',                 // Return type
+      genSetupCodeParameters, // Parameters
+      genSetupCode || ''      // SetupCode
+    );
+
+    // Generate loop code
+    let genLoopCodeName = `loop_${uName}`;
+    let genLoopCode = genChildrensLoopCall.join('\n');
+    let genLoopCodeParameters = [];
+    genLoopCodeParameters.push({
+      name: 'data',
+      type: `${genDataName}*`
+    });
+    for (var pi of this.GetGridPlugs()) {
+      genLoopCodeParameters.push({
+        name: pi.name,
+        type: pi.type
+      });
+    }
+    for (var po of this.GetPlatePlugs()) {
+      genLoopCodeParameters.push({
+        name: po.name,
+        type: `${po.type}*`
+      });
+    }
+
+    let genLoopCodeFunction = mainGenerator.GenerateFunction(
+      genLoopCodeName,    // Name
+      'void',                 // Return type
+      genLoopCodeParameters,  // Parameters
+      genLoopCode || ''       // LoopCode
+    );
+
+
+    // Join parts
     let genParts = [
       genHeaderComment,
       genDataStructure,
       genOutputsStructure,
-      genInstanceStructure
+      genInstanceStructure,
+      genSetupCodeFunction,
+      genLoopCodeFunction
     ];
 
     let genSource = genParts.join('\n');
