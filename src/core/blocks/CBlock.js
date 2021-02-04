@@ -107,9 +107,7 @@ class CBlock extends Block {
       genInstanceStructure,
 
       genSetupCodeFunction,
-      genLoopCodeFunction,
-
-      genInstancesArray
+      genLoopCodeFunction
     ].join('\n');
 
     return {
@@ -121,9 +119,7 @@ class CBlock extends Block {
         instanceStructure: BlockCode.Create(genInstanceName, genInstanceStructure),
 
         setupFunction: BlockCode.Create(genSetupCodeName, genSetupCodeFunction),
-        loopFunction: BlockCode.Create(genLoopCodeName, genLoopCodeFunction),
-
-        instancesArray: BlockCode.Create(genInstancesName, genInstancesArray)
+        loopFunction: BlockCode.Create(genLoopCodeName, genLoopCodeFunction)
       }
     }
   }

@@ -26,19 +26,9 @@ class Block_OneShot extends CBlock {
       `,
       false
     ;
-    
-    this.SetupCode =
-      `
-      var ret = [];
-      for (var i = 0; i < 50; i++)
-        ret.push(\`in.array[\${i}]\`);
-      return ret.join('\\n');
-      `,
-      true
-    ;
   }
 
-
+  SetupCode() {}
 }
 
 class Block_Counter extends CBlock {
@@ -72,7 +62,7 @@ class Block_Counter extends CBlock {
       if (inc)
         data->value++;
       *actValue = data->value;
-      *atTarget = (data->value >= data->target);
+      *atTarget = (data->value >= data->atTarget);
       `,
       false
     ;
@@ -136,4 +126,27 @@ mainBlock.ConnectPlugs([
   b4c.FindPlugByName("out")
 ]);
 
-console.log(mainBlock.GenerateSource().source);
+let genMainSource = mainBlock.GenerateSource();
+
+let genFinalSourceParts = [
+  mainGenerator.GenerateComment('    ______  __ __    ___  ____   ___ ___  ____  ___   ____   ____  __  _ '),
+  mainGenerator.GenerateComment('   |      ||  |  |  /  _]|    \\ |   |   ||    |/   \\ |    \\ |    ||  |/ ]'),
+  mainGenerator.GenerateComment('   |      ||  |  | /  [_ |  D  )| _   _ | |  ||     ||  _  | |  | |  \' / '),
+  mainGenerator.GenerateComment('   |_|  |_||  _  ||    _]|    / |  \\_/  | |  ||  O  ||  |  | |  | |    \\ '),
+  mainGenerator.GenerateComment('     |  |  |  |  ||   [_ |    \\ |   |   | |  ||     ||  |  | |  | |     |'),
+  mainGenerator.GenerateComment('     |  |  |  |  ||     ||  .  \\|   |   | |  ||     ||  |  | |  | |  .  |'),
+  mainGenerator.GenerateComment('     |__|  |__|__||_____||__|\\_||___|___||____|\\___/ |__|__||____||__|\\_|'),
+  '',
+  '#include <stdlib.h>',
+  '#include <unistd.h>',
+  '#include <stdbool.h>',
+  ''
+];
+for (var dKey in dependencies)
+  genFinalSourceParts.push(dependencies[dKey].source);
+
+genFinalSourceParts.push(genMainSource.source);
+
+let genFinalSource = genFinalSourceParts.join('\n');
+
+console.log(genFinalSource);
