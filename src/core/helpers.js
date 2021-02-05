@@ -30,9 +30,9 @@ class Helpers {
 
   static uuidv4() {
     uuidCnt++;
-    return uuidCnt;
+    return 'b_' + uuidCnt;
   }
-  
+
   static hashString(str) {
     var hash = 0, i, chr;
     for (i = 0; i < str.length; i++) {

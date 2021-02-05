@@ -58,6 +58,10 @@ class CGenerator extends Generator {
       return `${name}(${args.join(',')});`;
   }
 
+  GenerateAssignment(source, destination) {
+    return `${destination} = ${source};`;
+  }
+
   AccessIndirect(parent, children) {
     return `${parent}->${children}`;
   }
@@ -66,5 +70,8 @@ class CGenerator extends Generator {
   }
   GetReference(element) {
     return `&${element}`;
+  }
+  AccessReference(element) {
+    return `*${element}`;
   }
 }

@@ -73,3 +73,7 @@ void loop(s_data_main *data) {
 
 
 
+void loop_main(_s_data_main* data, bool D1, bool D2, bool* D10, bool* D11) {
+
+  *D10 = 
+}

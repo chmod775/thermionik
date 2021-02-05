@@ -107,13 +107,32 @@ let b1 = Block_OneShot.Create();
 let b2 = Block_Counter.Create();
 let b3 = Block_Counter.Create();
 
-let b4a = Block_And.Create({ size: 10 });
-let b4b = Block_And.Create({ size: 10 });
-let b4c = Block_And.Create({ size: 2 });
+let b4 = Block_And.Create({ size: 10 });
+let b5 = Block_And.Create({ size: 10 });
+let b6 = Block_And.Create({ size: 2 });
 
-let mainBlock = new WLBlock("main");
 
-mainBlock.AddBlock([b1, b2, b3, b4a, b4b, b4c]);
+class Main extends WLBlock {
+  constructor() {
+    super("main");
+  }
+
+  Init() {
+    this.SetPlugs(
+      [
+        PlugGrid.Create('D1', 'bool', 'false'),
+        PlugGrid.Create('D2', 'bool', 'false'),
+
+        PlugPlate.Create('D10', 'bool', 'false'),
+        PlugPlate.Create('D11', 'bool', 'false')
+      ]
+    );
+  }
+}
+
+let mainBlock = Main.Create();
+
+mainBlock.AddBlock([b1, b2, b3, b4, b5, b6]);
 
 mainBlock.ConnectPlugs([
   b1.FindPlugByName("out"),
@@ -123,7 +142,23 @@ mainBlock.ConnectPlugs([
 
 mainBlock.ConnectPlugs([
   b2.FindPlugByName("reset"),
-  b4c.FindPlugByName("out")
+  b6.FindPlugByName("out")
+]);
+
+mainBlock.ConnectPlugs([
+  mainBlock.FindPlugByName("D1"),
+  b6.FindPlugByName("in_0")
+]);
+
+mainBlock.ConnectPlugs([
+  mainBlock.FindPlugByName("D2"),
+  b6.FindPlugByName("in_1")
+]);
+
+mainBlock.ConnectPlugs([
+  b6.FindPlugByName("out"),
+  mainBlock.FindPlugByName("D10"),
+  mainBlock.FindPlugByName("D11")
 ]);
 
 let genMainSource = mainBlock.GenerateSource();

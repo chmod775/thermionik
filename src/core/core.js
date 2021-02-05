@@ -73,6 +73,20 @@ class Plug {
   DisconnectFromWire() { this.wire = null; }
 
   IsEqual(plug) { return (this.block == plug.block) && (this.name == plug.name) && (this.type == plug.type); }
+
+  static Flip(src) {
+    let ret = new Plug(src.block, src.name, src.type, src.init, src.configs);
+    ret.wire = src.wire;
+    ret.isPlate = !src.isPlate;
+    return ret;
+  }
+
+  static GetGridPlugs(plugs) {
+    return plugs.filter(p => !p.isPlate);
+  }
+  static GetPlatePlugs(plugs) {
+    return plugs.filter(p => p.isPlate);
+  }
 }
 
 class PlugPlate extends Plug {
@@ -189,10 +203,10 @@ class Block {
 
   /* ### Utilities ### */
   GetGridPlugs() {
-    return this.plugs.filter(p => !p.isPlate);
+    return Plug.GetGridPlugs(this.plugs);
   }
   GetPlatePlugs() {
-    return this.plugs.filter(p => p.isPlate);
+    return Plug.GetPlatePlugs(this.plugs);
   }
 
   FindPlugByName(name) {
@@ -235,10 +249,12 @@ class Generator {
   GenerateConst(name, type, value) { console.error("GenerateConst NOT IMPLEMENTED."); return null; }
   GenerateComment(content) { console.error("GenerateComment NOT IMPLEMENTED."); return null; }
   GenerateFunctionCall(name, args) { console.error("GenerateFunctionCall NOT IMPLEMENTED."); return null; }
+  GenerateAssignment(source, destination) { console.error("GenerateAssignment NOT IMPLEMENTED."); return null; }
 
   AccessIndirect(parent, children) { console.error("AccessIndirect NOT IMPLEMENTED."); return null; }
   AccessDirect(parent, children) { console.error("AccessDirect NOT IMPLEMENTED."); return null; }
   GetReference(element) { console.error("GetReference NOT IMPLEMENTED."); return null; }
+  AccessReference(element) { console.error("AccessReference NOT IMPLEMENTED."); return null; }
 }
 
 class Board {

@@ -22,13 +22,16 @@ class WLBlock extends Block {
   }
 
   ConnectPlugs(plugs) {
-    var foundPlates = plugs.filter(p => p.isPlate);
+    // Flip polarity for self owned plugs
+    let correctPlugs = plugs.map(p => (p.block != this) ? p : Plug.Flip(p));
+
+    var foundPlates = correctPlugs.filter(p => p.isPlate);
     if (foundPlates.length < 1) { console.error("Plate not found."); return null; }
     if (foundPlates.length > 1) { console.error("Multiple Plates found."); return null; }
 
     let foundPlate = foundPlates[0];
 
-    var foundGrids = plugs.filter(p => !p.isPlate);
+    var foundGrids = correctPlugs.filter(p => !p.isPlate);
     if (foundGrids.length < 1) { console.error("No Grids found."); return null; }
 
     var plateWire = foundPlate.wire;
@@ -42,6 +45,15 @@ class WLBlock extends Block {
     if (!this.wires.includes(plateWire))
     this.wires.push(plateWire);
     
+    // Apply wiring to real plugs TODO: FIND A REAL SOLUTION, not like NASA 1996
+    for (var p of correctPlugs) {
+      if (p.block == this) {
+        let realPlugs = this.FindPlugByName(p.name);
+        realPlugs.wire = p.wire;
+      }
+    }
+
+    // Return connected wire
     return plateWire;
   }
 
@@ -69,7 +81,6 @@ class WLBlock extends Block {
     // Scan all blocks inside
     for (var bIdx in this.blocks) {
       let b = this.blocks[bIdx];
-      let bId = `b_${b.guid}`;
 
       var cacheKey = b.UniqueName();
 
@@ -84,11 +95,11 @@ class WLBlock extends Block {
 
       // Add to instance structure
       genChildrensDataElements.push({
-        name: bId,
+        name: b.guid,
         type: blockCode.codes.instanceStructure.name
       });
 
-      let helpDataAccess = mainGenerator.AccessIndirect('data', bId);
+      let helpDataAccess = mainGenerator.AccessIndirect('data', b.guid);
 
       // Generate setup function call
       let genSetupCallArgs = [
@@ -116,24 +127,29 @@ class WLBlock extends Block {
         let plateConnected = pi.wire ? pi.wire.platePlug : null;
         
         if (plateConnected) {
-          let plateConnected_bId = `b_${plateConnected.block.guid}`;
+          if (plateConnected.block == this) {
+            genLoopCallArgs.push(pi.name);
+          } else {
+            let plateConnected_bId = `b_${plateConnected.block.guid}`;
 
-          genLoopCallArgs.push(
-            mainGenerator.AccessDirect(
+            genLoopCallArgs.push(
               mainGenerator.AccessDirect(
-                mainGenerator.AccessIndirect(
-                  'data',
-                  plateConnected_bId
+                mainGenerator.AccessDirect(
+                  mainGenerator.AccessIndirect(
+                    'data',
+                    plateConnected_bId
+                  ),
+                  'outputs'
                 ),
-                'outputs'
-              ),
-              plateConnected.name
-            )
-          );
+                plateConnected.name
+              )
+            );
+          }
         } else {
           genLoopCallArgs.push(pi.init);
         }
       }
+
       for (var po of b.GetPlatePlugs()) {
         genLoopCallArgs.push(
           mainGenerator.GetReference(
@@ -152,6 +168,27 @@ class WLBlock extends Block {
       genChildrensLoopCall.push(genLoopCall);
     }
     
+    // Generate plate marshalling
+    for (var po of this.GetPlatePlugs()) {
+      if (po.wire != null) {
+        let srcPlate = po.wire.platePlug;
+        console.log(srcPlate);
+        
+        let genMarshalledPlate = mainGenerator.GenerateAssignment(
+          mainGenerator.AccessDirect(
+            mainGenerator.AccessDirect(
+              mainGenerator.AccessIndirect('data', srcPlate.block.guid),
+              'outputs'
+            ),
+            srcPlate.name
+          ),
+          mainGenerator.AccessReference(po.name)
+        );
+  
+        genChildrensLoopCall.push(genMarshalledPlate);
+      }
+    }
+
     // Generate data structure
     let genDataName = `_s_data_${uName}`;
     let genDataStructure = mainGenerator.GenerateStructure(genDataName, this.data.concat(genChildrensDataElements));
