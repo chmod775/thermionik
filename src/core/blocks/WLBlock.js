@@ -1,4 +1,4 @@
-class WLBlock extends Block {
+class WLBlock extends EditableBlock {
   constructor(name) {
     super(name);
   
@@ -19,6 +19,7 @@ class WLBlock extends Block {
 
   RemoveBlock(block) {
     this.blocks = this.blocks.filter(t => !t.IsEqual(block));
+    block.Destroy();
   }
 
   ConnectPlugs(plugs) {
@@ -128,9 +129,9 @@ class WLBlock extends Block {
         
         if (plateConnected) {
           if (plateConnected.block == this) {
-            genLoopCallArgs.push(pi.name);
+            genLoopCallArgs.push(plateConnected.name);
           } else {
-            let plateConnected_bId = `b_${plateConnected.block.guid}`;
+            let plateConnected_bId = plateConnected.block.guid;
 
             genLoopCallArgs.push(
               mainGenerator.AccessDirect(
@@ -172,7 +173,6 @@ class WLBlock extends Block {
     for (var po of this.GetPlatePlugs()) {
       if (po.wire != null) {
         let srcPlate = po.wire.platePlug;
-        console.log(srcPlate);
         
         let genMarshalledPlate = mainGenerator.GenerateAssignment(
           mainGenerator.AccessDirect(
@@ -262,15 +262,13 @@ class WLBlock extends Block {
     return {
       source: genSource,
       codes: {
-        dataStructure: null,
-        outputsStructure: null,
+        dataStructure: BlockCode.Create(genDataName, genDataStructure),
+        outputsStructure: BlockCode.Create(genOutputsName, genOutputsStructure),
         
-        instanceStructure: null,
-        
-        setupFunction: null,
-        loopFunction: null,
+        instanceStructure: BlockCode.Create(genInstanceName, genInstanceStructure),
 
-        instancesArray: null
+        setupFunction: BlockCode.Create(genSetupCodeName, genSetupCodeFunction),
+        loopFunction: BlockCode.Create(genLoopCodeName, genLoopCodeFunction)
       }
     }
   }

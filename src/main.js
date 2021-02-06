@@ -111,6 +111,7 @@ let b4 = Block_And.Create({ size: 10 });
 let b5 = Block_And.Create({ size: 10 });
 let b6 = Block_And.Create({ size: 2 });
 
+let b7 = new CLBlock("dispenser");
 
 class Main extends WLBlock {
   constructor() {
@@ -130,9 +131,36 @@ class Main extends WLBlock {
   }
 }
 
-let mainBlock = Main.Create();
+// CL Test
+var prevStep = null;
 
-mainBlock.AddBlock([b1, b2, b3, b4, b5, b6]);
+prevStep = b7.AddStep(
+  CLBlock_Step.Create('Init')
+);
+
+prevStep = CLBlock_Step
+  .Create('WaitStart')
+  .AttachTransition(prevStep)
+  .AddPlug(PlugPlate.Create('Started', 'bool', 'false'));
+
+var prevStep_Left = CLBlock_Step
+  .Create('DispenseLeft_Work')
+  .AttachTransition(prevStep, 'Started')
+  
+
+prevStep = b7.CreateStep('Init', prevStep, [], []);
+prevStep = b7.CreateStep('WaitStart', prevStep.FindPlugByName('Active'), [], ['Started']);
+var prevStep_Left = b7.CreateStep('DispenseLeft_Work', prevStep.FindPlugByName('Started'), ['OK']);
+prevStep_Left = b7.CreateStep('DispenseLeft_Rest', prevStep_Left.FindPlugByName('OK'));
+
+var prevStep_Right = b7.CreateStep('DispenseRight_Work', prevStep.FindPlugByName('Started'), ['OK']);
+prevStep_Right = b7.CreateStep('DispenseRight_Rest', prevStep_Right.FindPlugByName('OK'));
+
+
+
+// WL Test
+let mainBlock = Main.Create();
+mainBlock.AddBlock([b1, b2, b3, b4, b5, b6, b7]);
 
 mainBlock.ConnectPlugs([
   b1.FindPlugByName("out"),
@@ -161,6 +189,9 @@ mainBlock.ConnectPlugs([
   mainBlock.FindPlugByName("D11")
 ]);
 
+
+
+
 let genMainSource = mainBlock.GenerateSource();
 
 let genFinalSourceParts = [
@@ -184,4 +215,4 @@ genFinalSourceParts.push(genMainSource.source);
 
 let genFinalSource = genFinalSourceParts.join('\n');
 
-console.log(genFinalSource);
+//console.log(genFinalSource);

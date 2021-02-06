@@ -87,16 +87,54 @@ void setup_and_42c45509(_s_data_and_42c45509* data) {
 void loop_and_42c45509(_s_data_and_42c45509* data, bool in_0, bool in_1, bool* out) {
 	*out = in_0 && in_1;
 }
-/* ##### block main by Anonymous ##### */
+/* ##### block dispenser by Anonymous ##### */
 typedef struct {
+} _s_data_dispenser;
+typedef struct {
+} _s_outputs_dispenser;
+typedef struct {
+	_s_data_dispenser data;
+	_s_outputs_dispenser outputs;
+} _s_instance_dispenser;
+void setup_dispenser(_s_data_dispenser* data) {
+	
+}
+void loop_dispenser(_s_data_dispenser* data) {
+	
+}
+/* ##### block main by Anonymous ##### */
+typedef u_int8_t step_flags;
+#define STEP_MASK_ACTIVE		0x80
+#define STEP_MASK_ENTRYSHOT	0x40
+#define STEP_MASK_EXITSHOT	0x20
+
+typedef struct {
+	step_flags Init;
+	step_flags WaitStart;
+	step_flags DispenseLeft_Work;
+} _s_steps_main;
+
+void setup_step(step_flags *flags) {
+	*flags = 0;
+}
+
+void loop_step(step_flags *actual, step_flags *next) {
+	
+}
+
+typedef struct {
+	_s_steps_main steps;
 	_s_instance_oneshot b_1;
 	_s_instance_counter b_2;
 	_s_instance_counter b_3;
 	_s_instance_and_15c80cfc b_4;
 	_s_instance_and_15c80cfc b_5;
 	_s_instance_and_42c45509 b_6;
+	_s_instance_dispenser b_7;
 } _s_data_main;
 typedef struct {
+	bool D10;
+	bool D11;
 } _s_outputs_main;
 typedef struct {
 	_s_data_main data;
@@ -109,8 +147,9 @@ void setup_main(_s_data_main* data) {
 	setup_and_15c80cfc(&data->b_4.data);
 	setup_and_15c80cfc(&data->b_5.data);
 	setup_and_42c45509(&data->b_6.data);
+	setup_dispenser(&data->b_7.data);
 }
-void loop_main(_s_data_main* data) {
+void loop_main(_s_data_main* data, bool D1, bool D2, bool* D10, bool* D11) {
 	loop_oneshot(
 		&data->b_1.data,
 		true,
@@ -160,8 +199,15 @@ void loop_main(_s_data_main* data) {
 	);
 	loop_and_42c45509(
 		&data->b_6.data,
-		false,
-		false,
+		D1,
+		D2,
 		&data->b_6.outputs.out
 	);
+	loop_dispenser(
+		&data->b_7.data
+	);
+	*D10 = data->b_6.outputs.out;
+	*D11 = data->b_6.outputs.out;
 }
+
+

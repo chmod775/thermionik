@@ -1,5 +1,5 @@
 // ########################
-let TODO = false;
+let TODO = (function(desc){console.error(`Are you missing something here? Like ${desc || 'TIME'}? DO IT.`);return null;});
 // ########################
 
 class Wire {
@@ -24,8 +24,8 @@ class Wire {
   ReplaceGrid(oldPlug, newPlug) {
     if (oldPlug.isPlate) { console.error("Provided old plug is not a Grid."); return; }
     if (newPlug.isPlate) { console.error("Provided new plug is not a Grid."); return; }
-    this.DisconnectPlug(oldPlug);
-    this.ConnectPlug(newPlug);
+    this.DisconnectGrid(oldPlug);
+    this.ConnectGrid(newPlug);
   }
 
   SetPlate(platePlug) {
@@ -43,6 +43,20 @@ class Wire {
     for (var p of this.gridPlugs)
       p.DisconnectFromWire(this);
     this.gridPlugs = [];
+  }
+
+  DisconnectPlug(plug) {
+    if (this.platePlug == plug)
+      this.platePlug = null;
+    else
+      this.DisconnectGrid(plug);
+  }
+
+  ReplacePlug(oldPlug, newPlug) {
+    if (this.platePlug == oldPlug)
+      this.platePlug = newPlug;
+    else
+      this.ReplaceGrid(oldPlug, newPlug);
   }
 }
 
@@ -181,6 +195,11 @@ class Block {
     return ret;
   }
 
+  Destroy() {
+    this.guid = '//' + this.guid;
+    this.DisconnectAllPlugs();
+  }
+
   /* ### Setters ### */
   SetData(data) {
     this.data = data;
@@ -202,6 +221,12 @@ class Block {
   }
 
   /* ### Utilities ### */
+  DisconnectAllPlugs() {
+    for (var p of this.plugs)
+      if (p.wire)
+        p.wire.DisconnectPlug(p);
+  }
+
   GetGridPlugs() {
     return Plug.GetGridPlugs(this.plugs);
   }
@@ -232,8 +257,15 @@ class Block {
   }
 
   /* ### Requirements ### */
-  Init() { console.error("Create NOT IMPLEMENTED."); return TODO; }
-  GenerateSource() { ole.error("GenerateSource NOT IMPLEMENTED."); return TODO; }
+  Init() { console.error("Create NOT IMPLEMENTED."); return null; }
+  GenerateSource() { ole.error("GenerateSource NOT IMPLEMENTED."); return null; }
+}
+
+class EditableBlock extends Block {
+  /* ### Plugs ### */
+  AddPlug(plug) { TODO() };
+  RemovePlug(plug) { TODO() };
+  ReplacePlug(oldPlug, newPlug) { TODO() };
 }
 
 class Compiler {
