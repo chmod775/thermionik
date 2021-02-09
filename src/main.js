@@ -134,29 +134,40 @@ class Main extends WLBlock {
 // CL Test
 var prevStep = null;
 
-prevStep = b7.AddStep(
-  CLBlock_Step.Create('Init')
-);
+let s001 = CLStep.Create(WLBlock, 'Init');
+let s002 = CLStep.Create(WLBlock, 'WaitStart');
 
-prevStep = CLBlock_Step
-  .Create('WaitStart')
-  .AttachTransition(prevStep)
-  .AddPlug(PlugPlate.Create('Started', 'bool', 'false'));
+let s003a = CLStep.Create(WLBlock, 'DispenseLeft_Work');
+let s004a = CLStep.Create(WLBlock, 'DispenseLeft_Rest');
 
-var prevStep_Left = CLBlock_Step
-  .Create('DispenseLeft_Work')
-  .AttachTransition(prevStep, 'Started')
-  
+let s003b = CLStep.Create(WLBlock, 'CycleType').SetExitPlates(['Double', 'Single']);
 
-prevStep = b7.CreateStep('Init', prevStep, [], []);
-prevStep = b7.CreateStep('WaitStart', prevStep.FindPlugByName('Active'), [], ['Started']);
-var prevStep_Left = b7.CreateStep('DispenseLeft_Work', prevStep.FindPlugByName('Started'), ['OK']);
-prevStep_Left = b7.CreateStep('DispenseLeft_Rest', prevStep_Left.FindPlugByName('OK'));
+let s004b = CLStep.Create(WLBlock, 'DispenseRight_Work');
+let s005b = CLStep.Create(WLBlock, 'DispenseRight_Rest');
 
-var prevStep_Right = b7.CreateStep('DispenseRight_Work', prevStep.FindPlugByName('Started'), ['OK']);
-prevStep_Right = b7.CreateStep('DispenseRight_Rest', prevStep_Right.FindPlugByName('OK'));
+let s004c = CLStep.Create(WLBlock, 's004c');
 
+let s006b = CLStep.Create(WLBlock, 's006b');
 
+let s007a = CLStep.Create(WLBlock, 'End');
+
+b7.AddStep([s001,s002,s003a,s004a,s003b,s004b,s005b,s004c,s006b,s007a]);
+
+b7.CreateTransition(s001, s002);
+
+b7.CreateTransition(s002, s003a);
+b7.CreateTransition(s003a, s004a);
+b7.CreateTransition(s004a, s007a);
+
+b7.CreateTransition(s002, s003b);
+b7.CreateTransition(s003b, 'Double', s004b);
+b7.CreateTransition(s004b, s005b);
+b7.CreateTransition(s005b, s006b);
+
+b7.CreateTransition(s003b, 'Single', s004c);
+b7.CreateTransition(s004c, s006b);
+
+b7.CreateTransition(s006b, s007a);
 
 // WL Test
 let mainBlock = Main.Create();
@@ -189,6 +200,9 @@ mainBlock.ConnectPlugs([
   mainBlock.FindPlugByName("D11")
 ]);
 
+
+// BOARD test
+let mainBoard = new ArduinoUno_Board();
 
 
 

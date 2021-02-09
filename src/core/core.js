@@ -261,13 +261,6 @@ class Block {
   GenerateSource() { ole.error("GenerateSource NOT IMPLEMENTED."); return null; }
 }
 
-class EditableBlock extends Block {
-  /* ### Plugs ### */
-  AddPlug(plug) { TODO() };
-  RemovePlug(plug) { TODO() };
-  ReplacePlug(oldPlug, newPlug) { TODO() };
-}
-
 class Compiler {
 
 }
@@ -290,7 +283,18 @@ class Generator {
 }
 
 class Board {
-  
+  constructor(name) {
+    this.name = name;
+
+    this.configs = {}; // Impact only on code generation, so JS level
+    this.settings = {}; // Will be in final code
+
+    this.mainBlock = null;
+
+    this.interfaces = [];
+  }
+
+  static Create(mainBlock) { console.error("Create NOT IMPLEMENTED."); return null; }
 }
 
 

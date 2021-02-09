@@ -1,31 +1,41 @@
-class CLBlock_Step extends WLBlock {
-  constructor(id) {
-    super("CLBlock_Step");
-
+class CLStep {
+  constructor(id, block) {
     this.id = id;
+    this.block = block;
+
     this.transitionPlug = null;
-    this.customExitPlates = [];
+    this.customExitPlates = ['Done'];
     this.customGrids = [];
   }
 
-  /* Transition */
-  AttachTransition(step, plateName) { TODO("AttachTransition") }
-  DetachTransition() { TODO("DetachTransition") }
+  SetExitPlates(plates) {
+    this.customExitPlates = plates;
+    this.UpdatePlugs();
+  } 
 
-  Init() {
-    this.SetPlugs(
+  SetGrids(grids) {
+    this.customGrids = grids;
+    this.UpdatePlugs();
+  }
+
+  UpdatePlugs() {
+    this.block.SetPlugs(
       [
         PlugGrid.Create('Active', 'bool', 'false'),
         PlugGrid.Create('EntryShot', 'bool', 'false'),
         PlugGrid.Create('ExitShot', 'bool', 'false'),
-
-        PlugPlate.Create('Done', 'bool', 'false')
-      ].concat(this.customExitPlates)
+      ]
+      .concat(this.customExitPlates.map(p => PlugPlate.Create(p, 'bool', 'false')))
+      .concat(this.customGrids)
     );
   }
 
-  static Create(id) {
-    return new CLBlock_Step(id);
+  static Create(destBlock, id, type) {
+    let blockIstance = new type(`${type.name}_Step`);
+    let ret = new CLBlock_Step(id, blockIstance);
+    ret.SetExitPlates([]);
+    destBlock.AddStep(ret);
+    return ret;
   }
 }
 

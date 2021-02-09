@@ -1,4 +1,4 @@
-class WLBlock extends EditableBlock {
+class WLBlock extends Block {
   constructor(name) {
     super(name);
   
