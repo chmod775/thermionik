@@ -13,6 +13,8 @@ class CLSequence {
     let ret = new CLSequence_Conditional(parentStep, structure);
     return ret;
   }
+
+  GetSteps() { console.error("GetSteps NOT IMPLEMENTED."); return null; }
 }
 
 class CLSequence_Steps extends CLSequence {
@@ -26,6 +28,17 @@ class CLSequence_Steps extends CLSequence {
     if (nonValidItems.length > 0) { console.error("[CLSequence_Steps] SetItems argument contains invalid items."); return null; }
 
     this.items = items || [];
+  }
+
+  GetSteps() {
+    let ret = [];
+    for (var i of this.items) {
+      if (i instanceof CLStep)
+        ret.push(i);
+      if (i instanceof CLSequence)
+        ret = ret.concat(i.GetSteps());
+    }
+    return ret;
   }
 }
 
@@ -43,6 +56,13 @@ class CLSequence_Parallel extends CLSequence {
     if (nonSequenceItems.length > 0) { console.error("[CLSequence_Parallel] SetSequences argument must contain only CLSequence items."); return null; }
 
     this.sequences = sequences || [];
+  }
+
+  GetSteps() {
+    let ret = [];
+    for (var s of this.sequences)
+      ret = ret.concat(s.GetSteps());
+    return ret;
   }
 }
 
@@ -81,6 +101,15 @@ class CLSequence_Conditional extends CLSequence {
     this.structurePlugs = structurePlugs;
     this.structure = structure;
   }
+
+  GetSteps() {
+    let ret = [this.parentStep];
+    for (var sKey in this.structure) {
+      let sVal = this.structure[sKey];
+      ret = ret.concat(sVal.GetSteps());
+    }
+    return ret;
+  }
 }
 
 
@@ -89,9 +118,12 @@ class CLStep {
     this.id = id;
     this.block = block;
 
+    this.owner = null; // CLBlock
+
     this.transitionPlug = null;
-    this.customExitPlates = ['Done'];
+    this.customExitPlates = [];
     this.customGrids = [];
+    this.UpdatePlugs();
   }
 
   SetExitPlates(plates) {
@@ -109,49 +141,67 @@ class CLStep {
   UpdatePlugs() {
     this.block.SetPlugs(
       [
-        PlugGrid.Create('Active', 'bool', 'false'),
+        PlugGrid.Create('Activate', 'bool', 'false'),
         PlugGrid.Create('EntryShot', 'bool', 'false'),
         PlugGrid.Create('ExitShot', 'bool', 'false'),
+
+        PlugPlate.Create('Active', 'bool', 'false')
       ]
       .concat(this.customExitPlates.map(p => PlugPlate.Create(p, 'bool', 'false')))
-      .concat(this.customGrids)
+      .concat(this.customGrids.map(p => PlugGrid.Create(p, 'bool', 'false')))
     );
   }
 
+  SetOwner(owner) {
+    this.owner = owner;
+    this.block.name = `Step_${this.owner.name}_${this.id}`;
+  }
+
   static Create(type, id) {
-    let blockIstance = new type(`${type.name}_Step`);
+    let blockIstance = new type(`Step__${id}`);
     let ret = new CLStep(id, blockIstance);
-    ret.SetExitPlates([]);
+    return ret;
+  }
+
+  static CreateDefault(id) {
+    let blockIstance = new WLBlock(`Step__${id}`);
+    let ret = new CLStep(id, blockIstance);
+
+    ret.SetExitPlates(['Done']);
+
+    blockIstance.ConnectPlugs([
+      blockIstance.FindPlugByName('Activate'),
+      blockIstance.FindPlugByName('Done')
+    ]);
+
     return ret;
   }
 }
 
 class CLBlock extends WLBlock {
-  constructor(name) {
+  constructor(name, sequence) {
     super(name);
   
     this._type = 'CL';
 
-    this.steps = []; // Instances of CLBlock_Step
+    this.SetSequence(sequence);
   }
 
   Create() {}
 
-  AddSteps(steps) {
-    if (Array.isArray(steps)) {
-      this.steps = this.steps.concat(steps);
-      return steps[0] || null;
-    } else {
-      this.steps.push(steps);
-      return step;  
+  UpdateSteps() {
+    if (this.sequence)
+      this.steps = this.sequence.GetSteps();
+
+    this.blocks = [];
+    for (var s of this.steps) {
+      s.SetOwner(this);
+      this.AddBlock(s.block);
     }
   }
 
-  RemoveSteps() {}
-
   SetSequence(sequence) {
     this.sequence = sequence;
+    this.UpdateSteps();
   }
-
-  
 }

@@ -111,8 +111,6 @@ let b4 = Block_And.Create({ size: 10 });
 let b5 = Block_And.Create({ size: 10 });
 let b6 = Block_And.Create({ size: 2 });
 
-let b7 = new CLBlock("dispenser");
-
 class Main extends WLBlock {
   constructor() {
     super("main");
@@ -134,22 +132,22 @@ class Main extends WLBlock {
 // CL Test
 var prevStep = null;
 
-let s001 = CLStep.Create(WLBlock, 'Init');
-let s002 = CLStep.Create(WLBlock, 'WaitStart');
+let s001 = CLStep.CreateDefault('Init');
+let s002 = CLStep.CreateDefault('WaitStart');
 
-let s003a = CLStep.Create(WLBlock, 'DispenseLeft_Work');
-let s004a = CLStep.Create(WLBlock, 'DispenseLeft_Rest');
+let s003a = CLStep.CreateDefault('DispenseLeft_Work');
+let s004a = CLStep.CreateDefault('DispenseLeft_Rest');
 
 let s003b = CLStep.Create(WLBlock, 'CycleType').SetExitPlates(['Double', 'Single']);
 
-let s004b = CLStep.Create(WLBlock, 'DispenseRight_Work');
-let s005b = CLStep.Create(WLBlock, 'DispenseRight_Rest');
+let s004b = CLStep.CreateDefault('DispenseRight_Work');
+let s005b = CLStep.CreateDefault('DispenseRight_Rest');
 
-let s004c = CLStep.Create(WLBlock, 's004c');
+let s004c = CLStep.CreateDefault('s004c');
 
-let s006b = CLStep.Create(WLBlock, 's006b');
+let s006b = CLStep.CreateDefault('s006b');
 
-let s007a = CLStep.Create(WLBlock, 'End');
+let s007a = CLStep.CreateDefault('End');
 
 let seq = CLSequence.Create([
   s001,
@@ -178,9 +176,22 @@ let seq = CLSequence.Create([
   s007a
 ]);
 
-b7.AddSteps([s001,s002,s003a,s004a,s003b,s004b,s005b,s004c,s006b,s007a]);
-b7.SetSequence(seq);
 
+let b7 = new CLBlock("dispenser", seq);
+
+b7.SetPlugs(
+  [
+    PlugPlate.Create('Work_A', 'bool', 'false'),
+    PlugPlate.Create('Rest_A', 'bool', 'false')
+  ]
+);
+
+b7.ConnectPlugs([
+  s003a.block.FindPlugByName("Active"),
+  b7.FindPlugByName("Work_A")
+]);
+
+/*
 // WL Test
 let mainBlock = Main.Create();
 mainBlock.AddBlock([b1, b2, b3, b4, b5, b6, b7]);
@@ -241,4 +252,4 @@ genFinalSourceParts.push(genMainSource.source);
 
 let genFinalSource = genFinalSourceParts.join('\n');
 
-//console.log(genFinalSource);
+//console.log(genFinalSource);*/

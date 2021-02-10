@@ -174,14 +174,19 @@ class WLBlock extends Block {
       if (po.wire != null) {
         let srcPlate = po.wire.platePlug;
         
-        let genMarshalledPlate = mainGenerator.GenerateAssignment(
+        var sourceRef = mainGenerator.AccessDirect(
           mainGenerator.AccessDirect(
-            mainGenerator.AccessDirect(
-              mainGenerator.AccessIndirect('data', srcPlate.block.guid),
-              'outputs'
-            ),
-            srcPlate.name
+            mainGenerator.AccessIndirect('data', srcPlate.block.guid),
+            'outputs'
           ),
+          srcPlate.name
+        );
+
+        if (srcPlate.block == this)
+            sourceRef = srcPlate.name;
+
+        let genMarshalledPlate = mainGenerator.GenerateAssignment(
+          sourceRef,
           mainGenerator.AccessReference(po.name)
         );
   
