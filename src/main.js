@@ -103,14 +103,7 @@ class Block_And extends CBlock {
   }
 }
 
-let b1 = Block_OneShot.Create();
-let b2 = Block_Counter.Create();
-let b3 = Block_Counter.Create();
-
-let b4 = Block_And.Create({ size: 10 });
-let b5 = Block_And.Create({ size: 10 });
-let b6 = Block_And.Create({ size: 2 });
-
+// WL Test
 class Main extends WLBlock {
   constructor() {
     super("main");
@@ -126,102 +119,124 @@ class Main extends WLBlock {
         PlugPlate.Create('D11', 'bool', 'false')
       ]
     );
+
+    let b1 = Block_OneShot.Create();
+    let b2 = Block_Counter.Create();
+    let b3 = Block_Counter.Create();
+    
+    let b4 = Block_And.Create({ size: 10 });
+    let b5 = Block_And.Create({ size: 10 });
+    let b6 = Block_And.Create({ size: 2 });
+
+    this.ConnectPlugs([
+      b1.FindPlugByName("out"),
+      b2.FindPlugByName("inc"),
+      b3.FindPlugByName("reset")
+    ]);
+
+    this.ConnectPlugs([
+      b2.FindPlugByName("reset"),
+      b6.FindPlugByName("out")
+    ]);
+
+    this.ConnectPlugs([
+      this.FindPlugByName("D1"),
+      b6.FindPlugByName("in_0")
+    ]);
+
+    this.ConnectPlugs([
+      this.FindPlugByName("D2"),
+      b6.FindPlugByName("in_1")
+    ]);
+
+    this.ConnectPlugs([
+      b6.FindPlugByName("out"),
+      this.FindPlugByName("D10"),
+      this.FindPlugByName("D11")
+    ]);
   }
 }
 
 // CL Test
-var prevStep = null;
+class Dispenser extends CLBlock {
+  constructor() {
+    super("Dispenser");
+  }
 
-let s001 = CLStep.CreateDefault('Init');
-let s002 = CLStep.CreateDefault('WaitStart');
-
-let s003a = CLStep.CreateDefault('DispenseLeft_Work');
-let s004a = CLStep.CreateDefault('DispenseLeft_Rest');
-
-let s003b = CLStep.Create(WLBlock, 'CycleType').SetExitPlates(['Double', 'Single']);
-
-let s004b = CLStep.CreateDefault('DispenseRight_Work');
-let s005b = CLStep.CreateDefault('DispenseRight_Rest');
-
-let s004c = CLStep.CreateDefault('s004c');
-
-let s006b = CLStep.CreateDefault('s006b');
-
-let s007a = CLStep.CreateDefault('End');
-
-let seq = CLSequence.Create([
-  s001,
-  s002,
-  CLSequence.CreateParallel([
-    CLSequence.Create([
-      s003a,
-      s004a
-    ]),
-    CLSequence.Create([
-      CLSequence.CreateConditional(
-        s003b,
-        {
-          Double: CLSequence.Create([
-            s004b,
-            s005b
-          ]),
-          Single: CLSequence.Create([
-            s004c
-          ])
-        }
-      ),
-      s006b
-    ])
-  ]),
-  s007a
-]);
+  Init() {
+    this.SetPlugs(
+      [
+        PlugPlate.Create('Work_A', 'bool', 'false'),
+        PlugPlate.Create('Rest_A', 'bool', 'false')
+      ]
+    );
 
 
-let b7 = new CLBlock("dispenser", seq);
+    let s001 = CLStep.CreateDefault('Init');
+    let s002 = CLStep.CreateDefault('WaitStart');
+    
+    let s003a = CLStep.CreateDefault('DispenseLeft_Work');
+    let s004a = CLStep.CreateDefault('DispenseLeft_Rest');
+    
+    let s003b = CLStep.Create(WLBlock, 'CycleType').SetExitPlates(['Double', 'Single']);
+    
+    let s004b = CLStep.CreateDefault('DispenseRight_Work');
+    let s005b = CLStep.CreateDefault('DispenseRight_Rest');
+    
+    let s004c = CLStep.CreateDefault('s004c');
+    
+    let s006b = CLStep.CreateDefault('s006b');
+    
+    let s007a = CLStep.CreateDefault('End');
+    
+    let seq = CLSequence.Create([
+      s001,
+      s002,
+      CLSequence.CreateParallel([
+        CLSequence.Create([
+          s003a,
+          s004a
+        ]),
+        CLSequence.Create([
+          CLSequence.CreateConditional(
+            s003b,
+            {
+              Double: CLSequence.Create([
+                s004b,
+                s005b
+              ]),
+              Single: CLSequence.Create([
+                s004c
+              ])
+            }
+          ),
+          s006b
+        ])
+      ]),
+      s007a
+    ]);
 
-b7.SetPlugs(
-  [
-    PlugPlate.Create('Work_A', 'bool', 'false'),
-    PlugPlate.Create('Rest_A', 'bool', 'false')
-  ]
-);
+    this.SetSequence(seq);
 
-b7.ConnectPlugs([
-  s003a.block.FindPlugByName("Active"),
-  b7.FindPlugByName("Work_A")
-]);
+    this.ConnectPlugs([
+      s003a.block.FindPlugByName("Active"),
+      this.FindPlugByName("Work_A")
+    ]);
+  }
+}
+
+
+
+
+let b7 = Dispenser.Create();
+
+let mainBlock = Main.Create();
+
+
+
 
 /*
-// WL Test
-let mainBlock = Main.Create();
-mainBlock.AddBlock([b1, b2, b3, b4, b5, b6, b7]);
 
-mainBlock.ConnectPlugs([
-  b1.FindPlugByName("out"),
-  b2.FindPlugByName("inc"),
-  b3.FindPlugByName("reset")
-]);
-
-mainBlock.ConnectPlugs([
-  b2.FindPlugByName("reset"),
-  b6.FindPlugByName("out")
-]);
-
-mainBlock.ConnectPlugs([
-  mainBlock.FindPlugByName("D1"),
-  b6.FindPlugByName("in_0")
-]);
-
-mainBlock.ConnectPlugs([
-  mainBlock.FindPlugByName("D2"),
-  b6.FindPlugByName("in_1")
-]);
-
-mainBlock.ConnectPlugs([
-  b6.FindPlugByName("out"),
-  mainBlock.FindPlugByName("D10"),
-  mainBlock.FindPlugByName("D11")
-]);
 
 
 // BOARD test

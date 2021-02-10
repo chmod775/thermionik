@@ -8,8 +8,6 @@ class WLBlock extends Block {
     this.wires = [];
   }
 
-  Create() {}
-
   AddBlock(block) {
     if (Array.isArray(block))
       this.blocks = this.blocks.concat(block);
@@ -51,6 +49,10 @@ class WLBlock extends Block {
       if (p.block == this) {
         let realPlugs = this.FindPlugByName(p.name);
         realPlugs.wire = p.wire;
+      } else {
+        // Automagically add blocks from plugs
+        if (!this.blocks.includes(p.block))
+          this.AddBlock(p.block);
       }
     }
 

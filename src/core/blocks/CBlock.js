@@ -12,8 +12,6 @@ class CBlock extends Block {
     this._type = 'C';
   }
 
-  Create() {}
-
   GenerateCountConst(count) {
     let uName = this.UniqueName();
     let genCountConst = mainGenerator.GenerateConst(`COUNT_${uName}`, 'int', count);

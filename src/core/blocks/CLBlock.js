@@ -179,15 +179,11 @@ class CLStep {
 }
 
 class CLBlock extends WLBlock {
-  constructor(name, sequence) {
+  constructor(name) {
     super(name);
   
     this._type = 'CL';
-
-    this.SetSequence(sequence);
   }
-
-  Create() {}
 
   UpdateSteps() {
     if (this.sequence)

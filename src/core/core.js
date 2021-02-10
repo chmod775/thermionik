@@ -257,7 +257,7 @@ class Block {
   }
 
   /* ### Requirements ### */
-  Init() { console.error("Create NOT IMPLEMENTED."); return null; }
+  Init() { console.error("Init NOT IMPLEMENTED."); return null; }
   GenerateSource() { ole.error("GenerateSource NOT IMPLEMENTED."); return null; }
 }
 
