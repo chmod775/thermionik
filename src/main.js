@@ -151,23 +151,35 @@ let s006b = CLStep.Create(WLBlock, 's006b');
 
 let s007a = CLStep.Create(WLBlock, 'End');
 
-b7.AddStep([s001,s002,s003a,s004a,s003b,s004b,s005b,s004c,s006b,s007a]);
+let seq = CLSequence.Create([
+  s001,
+  s002,
+  CLSequence.CreateParallel([
+    CLSequence.Create([
+      s003a,
+      s004a
+    ]),
+    CLSequence.Create([
+      CLSequence.CreateConditional(
+        s003b,
+        {
+          Double: CLSequence.Create([
+            s004b,
+            s005b
+          ]),
+          Single: CLSequence.Create([
+            s004c
+          ])
+        }
+      ),
+      s006b
+    ])
+  ]),
+  s007a
+]);
 
-b7.CreateTransition(s001, s002);
-
-b7.CreateTransition(s002, s003a);
-b7.CreateTransition(s003a, s004a);
-b7.CreateTransition(s004a, s007a);
-
-b7.CreateTransition(s002, s003b);
-b7.CreateTransition(s003b, 'Double', s004b);
-b7.CreateTransition(s004b, s005b);
-b7.CreateTransition(s005b, s006b);
-
-b7.CreateTransition(s003b, 'Single', s004c);
-b7.CreateTransition(s004c, s006b);
-
-b7.CreateTransition(s006b, s007a);
+b7.AddSteps([s001,s002,s003a,s004a,s003b,s004b,s005b,s004c,s006b,s007a]);
+b7.SetSequence(seq);
 
 // WL Test
 let mainBlock = Main.Create();
@@ -202,7 +214,7 @@ mainBlock.ConnectPlugs([
 
 
 // BOARD test
-let mainBoard = new ArduinoUno_Board();
+let mainBoard = ArduinoUno_Board.Create(mainBlock);
 
 
 
