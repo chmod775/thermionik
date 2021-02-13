@@ -8,16 +8,16 @@ class Block_OneShot extends CBlock {
   }
 
   Init() {
-    this.SetPlugs(
+    this.SetPins(
       [
-        PlugGrid.Create('in', 'bool', 'true'),
-        PlugPlate.Create('out', 'bool', 'false')
+        PinGrid.Create('in', 'bool', 'true'),
+        PinPlate.Create('out', 'bool', 'false')
       ]
     );
 
-    this.SetData([
+    this.Data = [
       { name: 'lastval', type: 'bool' }
-    ]);
+    ];
 
     this.LoopCode =
       `
@@ -39,23 +39,17 @@ class Block_Counter extends CBlock {
   Init() {
     this.author = "Michele Trombetta";
 
-    this.SetSettings({
-      target: 'int'
-    });
-
-    this.SetPlugs(
+    this.SetPins(
       [
-        PlugGrid.Create('inc', 'bool', 'false'),
-        PlugGrid.Create('reset', 'bool', 'false'),
+        PinGrid.Create('inc', 'bool', 'false'),
+        PinGrid.Create('reset', 'bool', 'false'),
 
-        PlugPlate.Create('actValue', 'int', '0'),
-        PlugPlate.Create('atTarget', 'bool', 'false')
+        PinPlate.Create('actValue', 'int', '0'),
+        PinPlate.Create('atTarget', 'bool', 'false')
       ]
     );
 
-    this.SetData([
-      { name: 'value', type: 'int' }
-    ]);
+    this.Data = [{ name: 'value', type: 'int' }];
 
     this.LoopCode =
       `
@@ -63,20 +57,21 @@ class Block_Counter extends CBlock {
         data->value++;
       *actValue = data->value;
       *atTarget = (data->value >= data->atTarget);
-      `,
-      false
+      `
     ;
 
     this.SetupCode =
       `
       data->value = 0;
-      `,
-      false
+      `
     ;
   }
 
-  SetupCode() {}
-  LoopCode() {}
+  static DefaultSettings() {
+    return {
+      target: 2
+    };
+  }
 }
 
 class Block_And extends CBlock {
@@ -87,19 +82,23 @@ class Block_And extends CBlock {
   Init() {
     let nGrids = Math.max(+this.configs.size, 2);
 
-    let plugs = [PlugPlate.Create('out', 'bool', 'false')];
+    let plugs = [PinPlate.Create('out', 'bool', 'false')];
     for (var gIdx = 0; gIdx < nGrids; gIdx++)
-      plugs.push(PlugGrid.Create(`in_${gIdx}`, 'bool', 'false'));
+      plugs.push(PinGrid.Create(`in_${gIdx}`, 'bool', 'false'));
 
-    this.SetPlugs(plugs);
+    this.SetPins(plugs);
   }
 
   SetupCode() {}
 
   LoopCode() {
-    let gridPlugs = this.GetGridPlugs();
-    let gridNames = gridPlugs.map(p => p.name);
+    let gridPins = this.GetGridPins();
+    let gridNames = gridPins.map(p => p.name);
     return `*out = ${gridNames.join(' && ')};`;
+  }
+
+  static DefaultConfigs() {
+    return { size: 2 };
   }
 }
 
@@ -112,11 +111,11 @@ class Main extends WLBlock {
   Init() {
     this.SetPlugs(
       [
-        PlugGrid.Create('D1', 'bool', 'false'),
-        PlugGrid.Create('D2', 'bool', 'false'),
+        PlugGrid.Create({ id: 'D1', type: 'bool', init: 'false'}),
+        PlugGrid.Create({ id: 'D2', type: 'bool', init: 'false'}),
 
-        PlugPlate.Create('D10', 'bool', 'false'),
-        PlugPlate.Create('D11', 'bool', 'false')
+        PlugPlate.Create({ id: 'D10', type: 'bool', init: 'false'}),
+        PlugPlate.Create({ id: 'D11', type: 'int', init: '0'})
       ]
     );
 
@@ -128,36 +127,38 @@ class Main extends WLBlock {
     let b5 = Block_And.Create({ size: 10 });
     let b6 = Block_And.Create({ size: 2 });
 
-    this.ConnectPlugs([
-      b1.FindPlugByName("out"),
-      b2.FindPlugByName("inc"),
-      b3.FindPlugByName("reset")
+    this.ConnectWire([
+      b1.FindPinByName("out"),
+      b2.FindPinByName("inc"),
+      b3.FindPinByName("reset")
     ]);
 
-    this.ConnectPlugs([
-      b2.FindPlugByName("reset"),
-      b6.FindPlugByName("out")
+    this.ConnectWire([
+      b2.FindPinByName("reset"),
+      b6.FindPinByName("out")
     ]);
 
-    this.ConnectPlugs([
-      this.FindPlugByName("D1"),
-      b6.FindPlugByName("in_0")
+    this.ConnectWire([
+      this.FindPinByName("D1"),
+      b6.FindPinByName("in_0")
     ]);
 
-    this.ConnectPlugs([
-      this.FindPlugByName("D2"),
-      b6.FindPlugByName("in_1")
+    this.ConnectWire([
+      this.FindPinByName("D2"),
+      b6.FindPinByName("in_1")
     ]);
 
-    this.ConnectPlugs([
-      b6.FindPlugByName("out"),
-      this.FindPlugByName("D10"),
-      this.FindPlugByName("D11")
+    this.ConnectWire([
+      b6.FindPinByName("out"),
+      this.FindPinByName("D10"),
+      this.FindPinByName("D11")
     ]);
+    
   }
 }
 
 // CL Test
+/*
 class Dispenser extends CLBlock {
   constructor() {
     super("Dispenser");
@@ -170,7 +171,6 @@ class Dispenser extends CLBlock {
         PlugPlate.Create('Rest_A', 'bool', 'false')
       ]
     );
-
 
     let s001 = CLStep.CreateDefault('Init');
     let s002 = CLStep.CreateDefault('WaitStart');
@@ -229,7 +229,7 @@ class Dispenser extends CLBlock {
 
 
 let b7 = Dispenser.Create();
-
+*/
 let mainBlock = Main.Create();
 
 

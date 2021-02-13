@@ -2,65 +2,68 @@
 let TODO = (function(desc){console.error(`Are you missing something here? Like ${desc || 'TIME'}? DO IT.`);return null;});
 // ########################
 
+
 class Wire {
-  constructor(platePlug) {
-    this.SetPlate(platePlug);
+  constructor(platePin) {
+    this.SetPlate(platePin);
 
-    this.gridPlugs = [];
+    this.gridPins = [];
   }
 
-  ConnectGrid(gridPlug) {
-    if (gridPlug.isPlate) { console.error("Provided plug is not a Grid."); return; }
-    if (gridPlug.ConnectToWire(this))
-      this.gridPlugs.push(gridPlug);
+  ConnectGrid(gridPin) {
+    if (gridPin.isPlate) { console.error("Provided pin is not a Grid."); return; }
+    if (gridPin.ConnectToWire(this))
+      this.gridPins.push(gridPin);
   }
 
-  DisconnectGrid(gridPlug) {
-    if (gridPlug.isPlate) { console.error("Provided plug is not a Grid."); return; }
-    gridPlug.DisconnectFromWire(this);
-    this.gridPlugs = this.gridPlugs.filter(t => !t.IsEqual(gridPlug));
+  DisconnectGrid(gridPin) {
+    if (gridPin.isPlate) { console.error("Provided pin is not a Grid."); return; }
+    gridPin.DisconnectFromWire(this);
+    this.gridPins = this.gridPins.filter(t => !t.IsEqual(gridPin));
   }
 
-  ReplaceGrid(oldPlug, newPlug) {
-    if (oldPlug.isPlate) { console.error("Provided old plug is not a Grid."); return; }
-    if (newPlug.isPlate) { console.error("Provided new plug is not a Grid."); return; }
-    this.DisconnectGrid(oldPlug);
-    this.ConnectGrid(newPlug);
+  ReplaceGrid(oldPin, newPin) {
+    if (oldPin.isPlate) { console.error("Provided old pin is not a Grid."); return; }
+    if (newPin.isPlate) { console.error("Provided new pin is not a Grid."); return; }
+    this.DisconnectGrid(oldPin);
+    this.ConnectGrid(newPin);
   }
 
-  SetPlate(platePlug) {
-    if (!platePlug.isPlate) { console.error("Provided plug is not a Plate."); return; }
-    if (platePlug.ConnectToWire(this))
-      this.platePlug = platePlug;
+  SetPlate(platePin) {
+    if (!platePin.isPlate) { console.error("Provided pin is not a Plate."); return; }
+    if (platePin.ConnectToWire(this))
+      this.platePin = platePin;
   }
 
   Clear() {
     // Disconnect plate
-    this.platePlug.DisconnectFromWire();
-    this.platePlug = null;
+    this.platePin.DisconnectFromWire();
+    this.platePin = null;
 
     // Disconnect all destinations
-    for (var p of this.gridPlugs)
+    for (var p of this.gridPins)
       p.DisconnectFromWire(this);
-    this.gridPlugs = [];
+    this.gridPins = [];
   }
 
-  DisconnectPlug(plug) {
-    if (this.platePlug == plug)
-      this.platePlug = null;
+  DisconnectPin(pin) {
+    if (this.platePin == pin)
+      this.platePin = null;
     else
-      this.DisconnectGrid(plug);
+      this.DisconnectGrid(pin);
   }
 
-  ReplacePlug(oldPlug, newPlug) {
-    if (this.platePlug == oldPlug)
-      this.platePlug = newPlug;
+  ReplacePin(oldPin, newPin) {
+    if (this.platePin == oldPin)
+      this.platePin = newPin;
     else
-      this.ReplaceGrid(oldPlug, newPlug);
+      this.ReplaceGrid(oldPin, newPin);
   }
 }
 
-class Plug {
+
+
+class Pin {
   constructor(block, name, type, init, configs) {
     this.block = block;
     this.name = name;
@@ -77,7 +80,7 @@ class Plug {
 
   ConnectToWire(wire) {
     if (this.wire != null) {
-      console.error("Plug already connected to Wire.");
+      console.error("Pin already connected to Wire.");
       return false;
     }
     
@@ -86,33 +89,26 @@ class Plug {
   }
   DisconnectFromWire() { this.wire = null; }
 
-  IsEqual(plug) { return (this.block == plug.block) && (this.name == plug.name) && (this.type == plug.type); }
+  IsEqual(pin) { return (this.block == pin.block) && (this.name == pin.name) && (this.type == pin.type); }
 
-  static Flip(src) {
-    let ret = new Plug(src.block, src.name, src.type, src.init, src.configs);
-    ret.wire = src.wire;
-    ret.isPlate = !src.isPlate;
-    return ret;
+  static FilterGridPins(pins) {
+    return pins.filter(p => !p.isPlate);
   }
-
-  static GetGridPlugs(plugs) {
-    return plugs.filter(p => !p.isPlate);
-  }
-  static GetPlatePlugs(plugs) {
-    return plugs.filter(p => p.isPlate);
+  static FilterPlatePins(pins) {
+    return pins.filter(p => p.isPlate);
   }
 }
 
-class PlugPlate extends Plug {
+class PinPlate extends Pin {
   static Create(name, type, init, configs) {
-    let ret = new Plug(null, name, type, init, configs);
+    let ret = new Pin(null, name, type, init, configs);
     ret.isPlate = true;
     return ret;
   }
 }
-class PlugGrid extends Plug {
+class PinGrid extends Pin {
   static Create(name, type, init, configs) {
-    let ret = new Plug(null, name, type, init, configs);
+    let ret = new Pin(null, name, type, init, configs);
     ret.isPlate = false;
     return ret;
   }
@@ -129,88 +125,36 @@ class BlockCode {
   }
 }
 
-class BlockData {
-  constructor() {
-    this.elements = []; // EXAMPLE: { name: 'cnt', type: 'uint32_t', init: 0 }
-    this.code = null;
-  }
-
-  static FromElements(elements) {
-    var ret = new BlockData();
-    ret.elements = elements;
-    ret.code = null;
-    return ret;
-  }
-
-  static FromCode(code) {
-    var ret = new BlockData();
-    ret.elements = [];
-    ret.code = code;
-    return ret;
-  }
-
-  GenerateStructure(name) {
-    return mainGenerator.GenerateStructure(name, this.code || this.elements);
-  }
-
-  SetElements(elements) {
-    this.elements = elements;
-  }
-
-  SetCode(code) {
-    this.code = code;
-  }
-
-  Clear() {
-    this.elements = [];
-    this.code = null;
-  }
-}
-
 class Block {
   constructor(name) {
     this.name = name;
+    this.guid = Helpers.uuidv4();
 
-    this.plugs = [];
+    this._lang = 'TRUMPET';
+
+    this.configs = {}; // Impact only on code generation, so JS level
+    this.settings = {}; // Will be in final code
 
     this.gui = {
       svgBody: null,
       svgName: null,
       svgPlugs: []
     };
-
-    this.configs = {}; // Impact only on code generation, so JS level
-    this.settings = {}; // Will be in final code
-
-    this._type = 'TRUMPET';
-
-    this.guid = Helpers.uuidv4();
-
-    this.data = [];
   }
 
   static Create(configs) {
     let ret = new this();
-    ret.SetConfigs(configs || {});
+    ret.SetSettings(this.DefaultSettings());
+    ret.SetConfigs(Object.assign(this.DefaultConfigs(), configs || {}));
     return ret;
   }
 
   Destroy() {
     this.guid = '//' + this.guid;
-    this.DisconnectAllPlugs();
+    this.Deinit();
   }
 
   /* ### Setters ### */
-  SetData(data) {
-    this.data = data;
-  }
-
-  SetPlugs(plugs) {
-    this.plugs = plugs;
-    for (var p of this.plugs)
-      p.SetBlock(this);
-  }
-
   SetConfigs(configs) {
     this.configs = configs;
     this.Init();
@@ -221,27 +165,6 @@ class Block {
   }
 
   /* ### Utilities ### */
-  DisconnectAllPlugs() {
-    for (var p of this.plugs)
-      if (p.wire)
-        p.wire.DisconnectPlug(p);
-  }
-
-  GetGridPlugs() {
-    return Plug.GetGridPlugs(this.plugs);
-  }
-  GetPlatePlugs() {
-    return Plug.GetPlatePlugs(this.plugs);
-  }
-
-  FindPlugByName(name) {
-    for (var p of this.plugs)
-      if (p.name.toLowerCase() == name.toLowerCase())
-        return p;
-    
-    return null;
-  }
-
   IsEqual(block) {
     return (this == block);
   }
@@ -258,7 +181,11 @@ class Block {
 
   /* ### Requirements ### */
   Init() { console.error("Init NOT IMPLEMENTED."); return null; }
-  GenerateSource() { ole.error("GenerateSource NOT IMPLEMENTED."); return null; }
+  Deinit() { console.error("Init NOT IMPLEMENTED."); return null; }
+  GenerateSource() { console.error("GenerateSource NOT IMPLEMENTED."); return null; }
+
+  static DefaultConfigs() { return {}; }
+  static DefaultSettings() { return {}; }
 }
 
 class Compiler {

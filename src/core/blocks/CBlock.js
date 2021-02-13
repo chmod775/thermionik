@@ -9,28 +9,40 @@ class CBlock extends Block {
   constructor(name) {
     super(name);
 
-    this._type = 'C';
+    this._lang = 'C';
+
+    this.pins = [];
   }
 
-  GenerateCountConst(count) {
-    let uName = this.UniqueName();
-    let genCountConst = mainGenerator.GenerateConst(`COUNT_${uName}`, 'int', count);
-    return genCountConst;
+  SetPins(pins) {
+    this.pins = pins;
+    for (var p of this.pins)
+      p.SetBlock(this);
+  }
+
+  FindPinByName(name) {
+    for (var p of this.pins)
+      if (p.name == name)
+        return p;
+    return null;
   }
 
   GenerateSource() {
     let uName = this.UniqueName();
+
+    let platePins = Pin.FilterPlatePins(this.pins);
+    let gridPins = Pin.FilterGridPins(this.pins);
 
     // Generate header comment
     let genHeaderComment = mainGenerator.GenerateComment(`##### block ${uName} by ${this.author || 'Anonymous'} #####`);
 
     // Generate data structure
     let genDataName = `_s_data_${uName}`;
-    let genDataStructure = mainGenerator.GenerateStructure(genDataName, this.data);
+    let genDataStructure = mainGenerator.GenerateStructure(genDataName, (this.Data instanceof Function) ? this.Data() : this.Data);
 
     // Generate outputs structure
     let genOutputsElements = [];
-    for (var po of this.GetPlatePlugs()) {
+    for (var po of platePins) {
       genOutputsElements.push( {
         name: po.name,
         type: po.type
@@ -71,13 +83,13 @@ class CBlock extends Block {
       name: 'data',
       type: `${genDataName}*`
     });
-    for (var pi of this.GetGridPlugs()) {
+    for (var pi of gridPins) {
       genLoopCodeParameters.push({
         name: pi.name,
         type: pi.type
       });
     }
-    for (var po of this.GetPlatePlugs()) {
+    for (var po of platePins) {
       genLoopCodeParameters.push({
         name: po.name,
         type: `${po.type}*`
@@ -90,10 +102,6 @@ class CBlock extends Block {
       genLoopCodeParameters,  // Parameters
       genLoopCode || ''       // LoopCode
     );
-
-    // Generate instance arrays
-    let genInstancesName = `instances_${uName}`;
-    let genInstancesArray = mainGenerator.GenerateArray(genInstancesName, genInstanceName, `COUNT_${uName}`);
 
     // Join generated parts
     let genSource = [
@@ -125,4 +133,5 @@ class CBlock extends Block {
   /* ### Requirements ### */
   SetupCode() { console.error("SetupCode NOT IMPLEMENTED."); return TODO; }
   LoopCode() { console.error("LoopCode NOT IMPLEMENTED."); return TODO; }
+  Data() { return []; }
 }

@@ -1,8 +1,10 @@
-class WLBlock extends Block {
+class WLBlock extends CBlock {
   constructor(name) {
     super(name);
   
-    this._type = 'WL';
+    this._lang = 'WL';
+
+    this.plugs = [];
 
     this.blocks = [];
     this.wires = [];
@@ -18,6 +20,26 @@ class WLBlock extends Block {
   RemoveBlock(block) {
     this.blocks = this.blocks.filter(t => !t.IsEqual(block));
     block.Destroy();
+  }
+
+  SetPlugs(plugs) {
+    let pins = [];
+    
+    this.plugs = plugs;
+    for (var p of this.plugs) {
+      p.SetBlock(this);
+    
+      if (p.isPlate) 
+        pins = pins.concat(Pin.FilterPlatePins(p.pins));
+      else
+        pins = pins.concat(Pin.FilterGridPins(p.pins));
+    }
+
+    this.SetPins(pins);
+  }
+
+  ConnectWire(items) {
+    console.log(items);
   }
 
   ConnectPlugs(plugs) {
@@ -62,20 +84,6 @@ class WLBlock extends Block {
 
   GenerateSource() {
     let uName = this.UniqueName();
-
-    // Generate header comment
-    let genHeaderComment = mainGenerator.GenerateComment(`##### block ${uName} by ${this.author || 'Anonymous'} #####`);
-
-    // Generate outputs structure
-    let genOutputsElements = [];
-    for (var po of this.GetPlatePlugs()) {
-      genOutputsElements.push( {
-        name: po.name,
-        type: po.type
-      });
-    }
-    let genOutputsName = `_s_outputs_${uName}`;
-    let genOutputsStructure = mainGenerator.GenerateStructure(genOutputsName, genOutputsElements);
 
     let genChildrensDataElements = [];
     let genChildrensSetupCall = [];
@@ -196,87 +204,13 @@ class WLBlock extends Block {
       }
     }
 
-    // Generate data structure
-    let genDataName = `_s_data_${uName}`;
-    let genDataStructure = mainGenerator.GenerateStructure(genDataName, this.data.concat(genChildrensDataElements));
-
-    // Generate instance structure
-    let genInstanceElements = [
-      { name: 'data', type: genDataName },
-      { name: 'outputs', type: genOutputsName }
-    ];
-
-    let genInstanceName = `_s_instance_${uName}`;
-    let genInstanceStructure = mainGenerator.GenerateStructure(genInstanceName, genInstanceElements);
-
     // Generate setup code
-    let genSetupCodeName = `setup_${uName}`;
-    let genSetupCode = genChildrensSetupCall.join('\n');
-    let genSetupCodeParameters = [];
-    genSetupCodeParameters.push({
-      name: 'data',
-      type: `${genDataName}*`
-    });
-
-    let genSetupCodeFunction = mainGenerator.GenerateFunction(
-      genSetupCodeName,   // Name
-      'void',                 // Return type
-      genSetupCodeParameters, // Parameters
-      genSetupCode || ''      // SetupCode
-    );
+    this.SetupCode = genChildrensSetupCall.join('\n');
 
     // Generate loop code
-    let genLoopCodeName = `loop_${uName}`;
-    let genLoopCode = genChildrensLoopCall.join('\n');
-    let genLoopCodeParameters = [];
-    genLoopCodeParameters.push({
-      name: 'data',
-      type: `${genDataName}*`
-    });
-    for (var pi of this.GetGridPlugs()) {
-      genLoopCodeParameters.push({
-        name: pi.name,
-        type: pi.type
-      });
-    }
-    for (var po of this.GetPlatePlugs()) {
-      genLoopCodeParameters.push({
-        name: po.name,
-        type: `${po.type}*`
-      });
-    }
-
-    let genLoopCodeFunction = mainGenerator.GenerateFunction(
-      genLoopCodeName,    // Name
-      'void',                 // Return type
-      genLoopCodeParameters,  // Parameters
-      genLoopCode || ''       // LoopCode
-    );
-
-
-    // Join parts
-    let genParts = [
-      genHeaderComment,
-      genDataStructure,
-      genOutputsStructure,
-      genInstanceStructure,
-      genSetupCodeFunction,
-      genLoopCodeFunction
-    ];
-
-    let genSource = genParts.join('\n');
-
-    return {
-      source: genSource,
-      codes: {
-        dataStructure: BlockCode.Create(genDataName, genDataStructure),
-        outputsStructure: BlockCode.Create(genOutputsName, genOutputsStructure),
-        
-        instanceStructure: BlockCode.Create(genInstanceName, genInstanceStructure),
-
-        setupFunction: BlockCode.Create(genSetupCodeName, genSetupCodeFunction),
-        loopFunction: BlockCode.Create(genLoopCodeName, genLoopCodeFunction)
-      }
-    }
+    this.LoopCode = genChildrensLoopCall.join('\n');
+    
+    // Call super generator
+    return super.GenerateSource();
   }
 }

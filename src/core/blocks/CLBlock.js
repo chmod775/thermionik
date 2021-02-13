@@ -182,7 +182,7 @@ class CLBlock extends WLBlock {
   constructor(name) {
     super(name);
   
-    this._type = 'CL';
+    this._lang = 'CL';
   }
 
   UpdateSteps() {
