@@ -16,22 +16,27 @@ class CBlock extends Block {
 
   SetPins(pins) {
     this.pins = pins;
-    for (var p of this.pins)
-      p.SetBlock(this);
-  }
 
-  FindPinByName(name) {
-    for (var p of this.pins)
-      if (p.name == name)
-        return p;
-    return null;
+    this.pin = { plate: {}, plates: [], grid: {}, grids: [] };
+
+    for (var p of this.pins) {
+      p.SetBlock(this);
+      this.pin[p.name] = p;
+      if (p.isPlate) {
+        this.pin.plate[p.name] = p;
+        this.pin.plates.push(p);
+      } else {
+        this.pin.grid[p.name] = p;
+        this.pin.grids.push(p);
+      }
+    }
   }
 
   GenerateSource() {
     let uName = this.UniqueName();
 
-    let platePins = Pin.FilterPlatePins(this.pins);
-    let gridPins = Pin.FilterGridPins(this.pins);
+    let platePins = this.pin.plates;
+    let gridPins = this.pin.grids;
 
     // Generate header comment
     let genHeaderComment = mainGenerator.GenerateComment(`##### block ${uName} by ${this.author || 'Anonymous'} #####`);

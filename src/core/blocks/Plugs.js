@@ -1,30 +1,29 @@
 class Plug extends CBlock {
-  constructor(name) {
+  constructor(name, isPlate) {
     super(name);
-    this.id = null;
-    this.block = null;
-    this.isPlate = false;
+    this.isPlate = isPlate;
   }
-  
-  SetBlock(block) { this.block = block; }
 
-  Init() {
-    this.id = this.configs.id;
+  SetPins(pins) {
+    let platePins = Pin.FilterPlatePins(pins);
+    let gridPins = Pin.FilterGridPins(pins);
+
+    if (this.isPlate && (platePins.length > 0)) { console.error("Plate plug can contain ONLY grid pins."); return null; }
+    if (!this.isPlate && (gridPins.length > 0)) { console.error("Grid plug can contain ONLY plate pins."); return null; }
+
+    super.SetPins(pins);
   }
 }
 
 class PlugPlate extends Plug {
   constructor() {
-    super("PlugPlate");
-    this.isPlate = true;
+    super("PlugPlate", true);
   }
 
   Init() {
-    super.Init();
     this.SetPins(
       [
         PinGrid.Create('ToPlate', this.configs.type, this.configs.init),
-        PinPlate.Create(this.id, this.configs.type, this.configs.init)
       ]
     );
   }
@@ -36,19 +35,18 @@ class PlugPlate extends Plug {
       init: 'false'
     }
   }
+
+  AsPin() { return PinPlate.Create(this.configs.id, this.configs.type, this.configs.init); }
 }
 
 class PlugGrid extends Plug {
   constructor() {
-    super("PlugGrid");
-    this.isPlate = false;
+    super("PlugGrid", false);
   }
 
   Init() {
-    super.Init();
     this.SetPins(
       [
-        PinGrid.Create(this.id, this.configs.type, this.configs.init),
         PinPlate.Create('FromGrid', this.configs.type, this.configs.init)
       ]
     );
@@ -61,4 +59,6 @@ class PlugGrid extends Plug {
       init: 'false'
     }
   }
+
+  AsPin() { return PinGrid.Create(this.configs.id, this.configs.type, this.configs.init); }
 }

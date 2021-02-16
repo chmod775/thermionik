@@ -92,13 +92,32 @@ class Block_And extends CBlock {
   SetupCode() {}
 
   LoopCode() {
-    let gridPins = this.GetGridPins();
+    let gridPins = this.pin.grids;
     let gridNames = gridPins.map(p => p.name);
     return `*out = ${gridNames.join(' && ')};`;
   }
 
   static DefaultConfigs() {
     return { size: 2 };
+  }
+}
+
+class Block_WL extends WLBlock {
+  constructor() {
+    super("WLLLLL");
+  }
+
+  Init() {
+    // Plugs
+    let p_in = PlugGrid.Create({ id: 'in', type: 'bool', init: 'false'});
+    let p_out = PlugPlate.Create({ id: 'out', type: 'bool', init: 'false'});
+    this.SetPlugs([ p_in, p_out ]);
+
+    // Wiring
+    this.ConnectWire([
+      p_in,
+      p_out
+    ]);
   }
 }
 
@@ -109,51 +128,58 @@ class Main extends WLBlock {
   }
 
   Init() {
-    this.SetPlugs(
-      [
-        PlugGrid.Create({ id: 'D1', type: 'bool', init: 'false'}),
-        PlugGrid.Create({ id: 'D2', type: 'bool', init: 'false'}),
+    // Plugs
+    let p_D1 = PlugGrid.Create({ id: 'D1', type: 'bool', init: 'false'});
+    this.p_D1 = p_D1;
+    
+    let p_D2 = PlugGrid.Create({ id: 'D2', type: 'bool', init: 'false'});
+    
+    let p_D10 = PlugPlate.Create({ id: 'D10', type: 'bool', init: 'false'});
+    let p_D11 = PlugPlate.Create({ id: 'D11', type: 'int', init: '0'});
 
-        PlugPlate.Create({ id: 'D10', type: 'bool', init: 'false'}),
-        PlugPlate.Create({ id: 'D11', type: 'int', init: '0'})
-      ]
-    );
+    this.SetPlugs([ p_D1, p_D2, p_D10, p_D11 ]);
 
+    // Blocks
     let b1 = Block_OneShot.Create();
     let b2 = Block_Counter.Create();
     let b3 = Block_Counter.Create();
     
     let b4 = Block_And.Create({ size: 10 });
-    let b5 = Block_And.Create({ size: 10 });
+    let b5 = Block_WL.Create();
     let b6 = Block_And.Create({ size: 2 });
 
+    // Wiring
     this.ConnectWire([
-      b1.FindPinByName("out"),
-      b2.FindPinByName("inc"),
-      b3.FindPinByName("reset")
+      b1.pin.out,
+      b2.pin.inc,
+      b3.pin.reset
     ]);
 
     this.ConnectWire([
-      b2.FindPinByName("reset"),
-      b6.FindPinByName("out")
+      p_D2,
+      b5.pin.in
     ]);
 
     this.ConnectWire([
-      this.FindPinByName("D1"),
-      b6.FindPinByName("in_0")
+      b2.pin.reset,
+      b5.pin.out
     ]);
 
     this.ConnectWire([
-      this.FindPinByName("D2"),
-      b6.FindPinByName("in_1")
+      p_D1,
+      b6.pin.in_0
     ]);
 
     this.ConnectWire([
-      b6.FindPinByName("out"),
-      this.FindPinByName("D10"),
-      this.FindPinByName("D11")
+      p_D2,
+      b6.pin.in_1
     ]);
-    
+
+    this.ConnectWire([
+      b6.pin.out,
+      p_D10,
+      p_D11
+    ]);
   }
 }
 

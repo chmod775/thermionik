@@ -26,33 +26,34 @@ class WLBlock extends CBlock {
     let pins = [];
     
     this.plugs = plugs;
-    for (var p of this.plugs) {
-      p.SetBlock(this);
     
-      if (p.isPlate) 
-        pins = pins.concat(Pin.FilterPlatePins(p.pins));
+    this.plug = { plates: {}, grids: {} };
+    for (var p of this.plugs) {
+      pins.push(p.AsPin());
+
+      this.plug[p.id] = p;
+      if (p.isPlate)
+        this.plug.plates[p.id] = p;
       else
-        pins = pins.concat(Pin.FilterGridPins(p.pins));
+        this.plug.grids[p.id] = p;
     }
 
     this.SetPins(pins);
   }
 
   ConnectWire(items) {
-    console.log(items);
-  }
+    let pins = items.map(p => {
+      if (p instanceof Pin) return p;
+      if (p instanceof Plug) return p.pins[0];
+    })
 
-  ConnectPlugs(plugs) {
-    // Flip polarity for self owned plugs
-    let correctPlugs = plugs.map(p => (p.block != this) ? p : Plug.Flip(p));
-
-    var foundPlates = correctPlugs.filter(p => p.isPlate);
+    var foundPlates = pins.filter(p => p.isPlate);
     if (foundPlates.length < 1) { console.error("Plate not found."); return null; }
     if (foundPlates.length > 1) { console.error("Multiple Plates found."); return null; }
 
     let foundPlate = foundPlates[0];
 
-    var foundGrids = correctPlugs.filter(p => !p.isPlate);
+    var foundGrids = pins.filter(p => !p.isPlate);
     if (foundGrids.length < 1) { console.error("No Grids found."); return null; }
 
     var plateWire = foundPlate.wire;
@@ -65,20 +66,15 @@ class WLBlock extends CBlock {
     // Add to wires list
     if (!this.wires.includes(plateWire))
     this.wires.push(plateWire);
-    
-    // Apply wiring to real plugs TODO: FIND A REAL SOLUTION, not like NASA 1996
-    for (var p of correctPlugs) {
-      if (p.block == this) {
-        let realPlugs = this.FindPlugByName(p.name);
-        realPlugs.wire = p.wire;
-      } else {
-        // Automagically add blocks from plugs
-        if (!this.blocks.includes(p.block))
-          this.AddBlock(p.block);
-      }
+
+    // Automagically add blocks from pins
+    for (var p of pins) {
+      let pBlock = p.block;
+      if (!(pBlock instanceof Plug))
+        if (!this.blocks.includes(pBlock))
+          this.AddBlock(pBlock);
     }
 
-    // Return connected wire
     return plateWire;
   }
 
@@ -88,6 +84,8 @@ class WLBlock extends CBlock {
     let genChildrensDataElements = [];
     let genChildrensSetupCall = [];
     let genChildrensLoopCall = [];
+
+    this.Data = [];
 
     // Scan all blocks inside
     for (var bIdx in this.blocks) {
@@ -105,7 +103,7 @@ class WLBlock extends CBlock {
       }
 
       // Add to instance structure
-      genChildrensDataElements.push({
+      this.Data.push({
         name: b.guid,
         type: blockCode.codes.instanceStructure.name
       });
@@ -134,12 +132,13 @@ class WLBlock extends CBlock {
         )
       ];
 
-      for (var pi of b.GetGridPlugs()) {
-        let plateConnected = pi.wire ? pi.wire.platePlug : null;
+      for (var pi of b.pin.grids) {
+        let plateConnected = pi.wire ? pi.wire.platePin : null;
         
         if (plateConnected) {
-          if (plateConnected.block == this) {
-            genLoopCallArgs.push(plateConnected.name);
+          if (plateConnected.block instanceof Plug) {
+            console.log(plateConnected);
+            genLoopCallArgs.push(plateConnected.block.id);
           } else {
             let plateConnected_bId = plateConnected.block.guid;
 
@@ -161,7 +160,7 @@ class WLBlock extends CBlock {
         }
       }
 
-      for (var po of b.GetPlatePlugs()) {
+      for (var po of b.pin.plates) {
         genLoopCallArgs.push(
           mainGenerator.GetReference(
             mainGenerator.AccessDirect(
@@ -178,7 +177,7 @@ class WLBlock extends CBlock {
       let genLoopCall = mainGenerator.GenerateFunctionCall(blockCode.codes.loopFunction.name, genLoopCallArgs, true);
       genChildrensLoopCall.push(genLoopCall);
     }
-    
+    /*
     // Generate plate marshalling
     for (var po of this.GetPlatePlugs()) {
       if (po.wire != null) {
@@ -203,13 +202,15 @@ class WLBlock extends CBlock {
         genChildrensLoopCall.push(genMarshalledPlate);
       }
     }
-
+*/
     // Generate setup code
     this.SetupCode = genChildrensSetupCall.join('\n');
 
     // Generate loop code
     this.LoopCode = genChildrensLoopCall.join('\n');
     
+    console.log(this.Data);
+
     // Call super generator
     return super.GenerateSource();
   }

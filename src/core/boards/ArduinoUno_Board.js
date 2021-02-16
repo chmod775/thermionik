@@ -9,3 +9,15 @@ class ArduinoUno_Board extends Board {
     return ret;
   }
 }
+
+class Arduino_DigitalInput_Plug extends Plug {
+
+}
+
+class Arduino_DigitalOutput_Plug extends Plug {
+
+}
+
+class Arduino_OLED_Plug extends Plug {
+
+}
