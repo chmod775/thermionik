@@ -135,6 +135,8 @@ class Block {
     this.configs = {}; // Impact only on code generation, so JS level
     this.settings = {}; // Will be in final code
 
+    this.plugConfigs = null; // BLOCK: null, PLUG: { isPlate: false }
+
     this.gui = {
       svgBody: null,
       svgName: null,
@@ -170,8 +172,12 @@ class Block {
   }
 
   Hash() {
-    var hashInt = Helpers.hashString(JSON.stringify(this.configs)) - 0xf62;
-    return (hashInt > 0) ? hashInt.toString(16) : '';
+    let jsonActualConfigs = JSON.stringify(this.configs);
+    let jsonDefaultConfigs = JSON.stringify(this.constructor.DefaultConfigs());
+    if (jsonActualConfigs == jsonDefaultConfigs) return '';
+
+    var hashInt = Helpers.hashString(jsonActualConfigs);
+    return hashInt.toString(16);
   }
 
   UniqueName() {

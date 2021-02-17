@@ -15,6 +15,14 @@ class CBlock extends Block {
   }
 
   SetPins(pins) {
+    if (this.plugConfigs) {
+      let platePins = Pin.FilterPlatePins(pins);
+      let gridPins = Pin.FilterGridPins(pins);
+  
+      if (this.plugConfigs.isPlate && (platePins.length > 0)) { console.error(this, "Plate plug can contain ONLY grid pins."); return null; }
+      if (!this.plugConfigs.isPlate && (gridPins.length > 0)) { console.error(this, "Grid plug can contain ONLY plate pins."); return null; }
+    }
+
     this.pins = pins;
 
     this.pin = { plate: {}, plates: [], grid: {}, grids: [] };
@@ -140,3 +148,20 @@ class CBlock extends Block {
   LoopCode() { console.error("LoopCode NOT IMPLEMENTED."); return TODO; }
   Data() { return []; }
 }
+
+class CPlug_Plate extends CBlock {
+  constructor(name) {
+    super(name);
+    this.plugConfigs = { isPlate: true };
+  }
+}
+
+class CPlug_Grid extends CBlock {
+  constructor(name) {
+    super(name);
+    this.plugConfigs = { isPlate: false };
+  }
+}
+
+CBlock.PlatePlug = CPlug_Plate;
+CBlock.GridPlug = CPlug_Grid;

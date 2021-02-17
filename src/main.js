@@ -1,7 +1,5 @@
 let mainGenerator = new CGenerator();
 
-let dependencies = {};
-
 class Block_OneShot extends CBlock {
   constructor() {
     super("oneshot");
@@ -69,9 +67,33 @@ class Block_Counter extends CBlock {
 
   static DefaultSettings() {
     return {
-      target: 2
+      target: 100
     };
   }
+}
+
+class Block_Not extends CBlock {
+  constructor() {
+    super("not");
+  }
+
+  Init() {
+    this.SetPins(
+      [
+        PinGrid.Create('in', 'bool', 'false'),
+        PinPlate.Create('out', 'bool', 'false')
+      ]
+    );
+
+    this.LoopCode =
+      `
+      *out = !in;
+      `,
+      false
+    ;
+  }
+
+  SetupCode() {}
 }
 
 class Block_And extends CBlock {
@@ -130,16 +152,19 @@ class Main extends WLBlock {
   Init() {
     // Plugs
     let p_D1 = PlugGrid.Create({ id: 'D1', type: 'bool', init: 'false'});
-    this.p_D1 = p_D1;
-    
     let p_D2 = PlugGrid.Create({ id: 'D2', type: 'bool', init: 'false'});
     
+    let p_di_2 = Arduino_DigitalInput_Plug.Create({ pin: 2 });
+
     let p_D10 = PlugPlate.Create({ id: 'D10', type: 'bool', init: 'false'});
     let p_D11 = PlugPlate.Create({ id: 'D11', type: 'int', init: '0'});
 
-    this.SetPlugs([ p_D1, p_D2, p_D10, p_D11 ]);
+    let p_do_13 = Arduino_DigitalOutput_Plug.Create({ pin: 13 });
+
+    this.SetPlugs([ p_D1, p_D2, p_D10, p_D11, p_di_2, p_do_13 ]);
 
     // Blocks
+    /*
     let b1 = Block_OneShot.Create();
     let b2 = Block_Counter.Create();
     let b3 = Block_Counter.Create();
@@ -147,8 +172,20 @@ class Main extends WLBlock {
     let b4 = Block_And.Create({ size: 10 });
     let b5 = Block_WL.Create();
     let b6 = Block_And.Create({ size: 2 });
+*/
+
+    let b7 = Block_Not.Create();
 
     // Wiring
+    this.ConnectWire([
+      p_di_2.pin.value,
+      b7.pin.in
+    ]);
+    this.ConnectWire([
+      b7.pin.out,
+      p_do_13.pin.value
+    ]);
+/*
     this.ConnectWire([
       b1.pin.out,
       b2.pin.inc,
@@ -177,9 +214,14 @@ class Main extends WLBlock {
 
     this.ConnectWire([
       b6.pin.out,
-      p_D10,
-      p_D11
+      p_D10
     ]);
+
+    this.ConnectWire([
+      p_D1,
+      p_D11
+    ])
+    */
   }
 }
 
@@ -258,8 +300,15 @@ let b7 = Dispenser.Create();
 */
 let mainBlock = Main.Create();
 
+let mainBlockSource = mainBlock.GenerateSource().source;
 
+let sources = [];
+for (let k in mainBlock.dependencies)
+  sources.push(mainBlock.dependencies[k].source);
 
+sources.push(mainBlockSource);
+
+console.log(sources.join('\n'));
 
 /*
 
