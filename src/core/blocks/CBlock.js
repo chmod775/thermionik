@@ -11,6 +11,8 @@ class CBlock extends Block {
 
     this._lang = 'C';
 
+    this.requirements = [];
+
     this.pins = [];
   }
 
@@ -48,6 +50,9 @@ class CBlock extends Block {
 
     // Generate header comment
     let genHeaderComment = mainGenerator.GenerateComment(`##### block ${uName} by ${this.author || 'Anonymous'} #####`);
+
+    // Generate init code
+    let genInitCode = (this.InitCode instanceof Function) ? this.InitCode() : this.InitCode;
 
     // Generate data structure
     let genDataName = `_s_data_${uName}`;
@@ -132,6 +137,8 @@ class CBlock extends Block {
     return {
       source: genSource,
       codes: {
+        init: BlockCode.Create('init', genInitCode),
+
         dataStructure: BlockCode.Create(genDataName, genDataStructure),
         outputsStructure: BlockCode.Create(genOutputsName, genOutputsStructure),
         
@@ -144,6 +151,7 @@ class CBlock extends Block {
   }
 
   /* ### Requirements ### */
+  InitCode() { console.error("InitCode NOT IMPLEMENTED."); return TODO; }
   SetupCode() { console.error("SetupCode NOT IMPLEMENTED."); return TODO; }
   LoopCode() { console.error("LoopCode NOT IMPLEMENTED."); return TODO; }
   Data() { return []; }

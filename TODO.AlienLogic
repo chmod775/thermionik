@@ -7,4 +7,4 @@
 	  |__|  |__|__||_____||__|\_||___|___||____|\___/ |__|__||____||__|\_|
 
 - Better to use a Proxy to monitor block configs changes? (instead to rely only on SetConfigs)
- 
+- Optimize InitCode, do not duplicate code of same blocks (like #include <stdlib.h>, etc...)

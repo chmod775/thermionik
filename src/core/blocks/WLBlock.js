@@ -179,27 +179,23 @@ class WLBlock extends CBlock {
       });
 
       let helpDataAccess = mainGenerator.AccessIndirect('data', b.guid);
+      let dataIndirectReference = mainGenerator.GetReference(
+        mainGenerator.AccessDirect(
+          helpDataAccess,
+          'data'
+        )
+      );
 
       // Generate setup function call
       let genSetupCallArgs = [
-        mainGenerator.GetReference(
-          mainGenerator.AccessDirect(
-            helpDataAccess,
-            'data'
-          )
-        )
+        dataIndirectReference
       ];
       let genSetupCall = mainGenerator.GenerateFunctionCall(blockCode.codes.setupFunction.name, genSetupCallArgs);
       genChildrensSetupCall.push(genSetupCall);
 
       // Generate loop function call
       let genLoopCallArgs = [
-        mainGenerator.GetReference(
-          mainGenerator.AccessDirect(
-            helpDataAccess,
-            'data'
-          )
-        )
+        dataIndirectReference
       ];
 
       for (var pi of b.pin.grids) {
@@ -278,6 +274,9 @@ class WLBlock extends CBlock {
 
       genChildrensLoopCall.push(genMarshalledPlate);
     }
+
+    // Generate init code
+    this.InitCode = null;
 
     // Generate setup code
     this.SetupCode = genChildrensSetupCall.join('\n');

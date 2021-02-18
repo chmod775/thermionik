@@ -10,7 +10,7 @@ class CGenerator extends Generator {
 
     if (Array.isArray(elements)) {
       for (var i of elements)
-      genLines.push( `\t${i.type} ${i.name};` );
+        genLines.push(`\t${this.VariableDefinition(i.name, i.type)}`);
     } else
       genLines.push( elements );
 
@@ -62,6 +62,9 @@ class CGenerator extends Generator {
     return `${destination} = ${source};`;
   }
 
+  VariableDefinition(name, type) {
+    return `${type} ${name};`;
+  }
   AccessIndirect(parent, children) {
     return `${parent}->${children}`;
   }

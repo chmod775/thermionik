@@ -26,6 +26,7 @@ class Block_OneShot extends CBlock {
     ;
   }
 
+  InitCode() {}
   SetupCode() {}
 }
 
@@ -48,6 +49,8 @@ class Block_Counter extends CBlock {
     );
 
     this.Data = [{ name: 'value', type: 'int' }];
+
+    this.InitCode = null;
 
     this.LoopCode =
       `
@@ -93,6 +96,7 @@ class Block_Not extends CBlock {
     ;
   }
 
+  InitCode() {}
   SetupCode() {}
 }
 
@@ -111,6 +115,7 @@ class Block_And extends CBlock {
     this.SetPins(plugs);
   }
 
+  InitCode() {}
   SetupCode() {}
 
   LoopCode() {
@@ -159,9 +164,10 @@ class Main extends WLBlock {
     let p_D10 = PlugPlate.Create({ id: 'D10', type: 'bool', init: 'false'});
     let p_D11 = PlugPlate.Create({ id: 'D11', type: 'int', init: '0'});
 
-    let p_do_13 = Arduino_DigitalOutput_Plug.Create({ pin: 13 });
+    let p_do_13 = Arduino_DigitalOutput_Plug.Create({ pin: 3 });
+    let p_do_oled = Arduino_OLEDNumber_Plug.Create({ n_values: 3 });
 
-    this.SetPlugs([ p_D1, p_D2, p_D10, p_D11, p_di_2, p_do_13 ]);
+    this.SetPlugs([ p_D1, p_D2, p_D10, p_D11, p_di_2, p_do_13, p_do_oled ]);
 
     // Blocks
     /*
@@ -184,6 +190,15 @@ class Main extends WLBlock {
     this.ConnectWire([
       b7.pin.out,
       p_do_13.pin.value
+    ]);
+    this.ConnectWire([
+      b7.pin.out,
+      p_do_oled.pin.value_0,
+      p_do_oled.pin.value_1
+    ]);
+    this.ConnectWire([
+      p_di_2.pin.value,
+      p_do_oled.pin.value_2
     ]);
 /*
     this.ConnectWire([
@@ -300,46 +315,6 @@ let b7 = Dispenser.Create();
 */
 let mainBlock = Main.Create();
 
-let mainBlockSource = mainBlock.GenerateSource().source;
-
-let sources = [];
-for (let k in mainBlock.dependencies)
-  sources.push(mainBlock.dependencies[k].source);
-
-sources.push(mainBlockSource);
-
-console.log(sources.join('\n'));
-
-/*
-
-
-
-// BOARD test
 let mainBoard = ArduinoUno_Board.Create(mainBlock);
 
-
-
-let genMainSource = mainBlock.GenerateSource();
-
-let genFinalSourceParts = [
-  mainGenerator.GenerateComment('    ______  __ __    ___  ____   ___ ___  ____  ___   ____   ____  __  _ '),
-  mainGenerator.GenerateComment('   |      ||  |  |  /  _]|    \\ |   |   ||    |/   \\ |    \\ |    ||  |/ ]'),
-  mainGenerator.GenerateComment('   |      ||  |  | /  [_ |  D  )| _   _ | |  ||     ||  _  | |  | |  \' / '),
-  mainGenerator.GenerateComment('   |_|  |_||  _  ||    _]|    / |  \\_/  | |  ||  O  ||  |  | |  | |    \\ '),
-  mainGenerator.GenerateComment('     |  |  |  |  ||   [_ |    \\ |   |   | |  ||     ||  |  | |  | |     |'),
-  mainGenerator.GenerateComment('     |  |  |  |  ||     ||  .  \\|   |   | |  ||     ||  |  | |  | |  .  |'),
-  mainGenerator.GenerateComment('     |__|  |__|__||_____||__|\\_||___|___||____|\\___/ |__|__||____||__|\\_|'),
-  '',
-  '#include <stdlib.h>',
-  '#include <unistd.h>',
-  '#include <stdbool.h>',
-  ''
-];
-for (var dKey in dependencies)
-  genFinalSourceParts.push(dependencies[dKey].source);
-
-genFinalSourceParts.push(genMainSource.source);
-
-let genFinalSource = genFinalSourceParts.join('\n');
-
-//console.log(genFinalSource);*/
+console.log(mainBoard.Generate());
