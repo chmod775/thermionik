@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+
+    <!-- Google fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Raleway&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Kit -->
+    <script src="https://kit.fontawesome.com/24349febcf.js" crossorigin="anonymous"></script>
+
+    <!-- Monaco editor (from CDN) -->
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/editor/editor.main.min.css">
+
+    <!-- Treeview JSLists -->
+    <link rel="stylesheet" href="jsLists.css"/>
+
+    <title>THERMIONIK</title>
+
+    <style>
+        body {
+            font-family: 'Raleway', sans-serif;
+            background-color: #1e1e1e;
+        }
+        
+        .bd-sidebar {
+            order: 0;
+            position: sticky;
+            top: 4rem;
+            z-index: 1000;
+            height: calc(100vh - 4rem);
+            border-right: 1px solid rgba(255,255,255,.1);
+        }
+
+        .bd-navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1071;
+            min-height: 4rem;
+            background-color: #000000;
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,.05), inset 0 -1px 0 rgba(0,0,0,.1);
+        }
+
+        .logo {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        .editor-files {
+            z-index: 10000;
+            position: absolute;
+            top: -50px;
+        }
+
+        .logo_watermark {
+            position: absolute;
+            height: 100px;
+            bottom: 10px;
+            right: 10px;
+            opacity: 0.7;
+        }
+    </style>
+  </head>
+  <body>
+
+    <div id="drawing" class="wireboard"></div>
+
+
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+
+    <!-- Monaco editor (from CDN)-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/loader.min.js"></script>
+    <script>
+        // Based on https://jsfiddle.net/developit/bwgkr6uq/ which just works but is based on unpkg.com.
+        // Provided by loader.min.js.
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs' }});
+        window.MonacoEnvironment = { getWorkerUrl: () => proxy };
+        let proxy = URL.createObjectURL(new Blob([`
+            self.MonacoEnvironment = {
+                baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min'
+            };
+            importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/base/worker/workerMain.min.js');
+        `], { type: 'text/javascript' }));
+        require(["vs/editor/editor.main"], function () {
+            let editor = monaco.editor.create(document.getElementById('container'), {
+                value: 'function x() {\nconsole.log("Hello world!");\n}',
+                language: 'c',
+                automaticLayout: true,
+                fixedOverflowWidgets: true,
+                theme: 'vs-dark'
+            });
+        });
+        </script>
+
+    <!-- Treeview JSLists -->
+    <script src="jsLists.js"></script>
+    <script>
+        JSLists.applyToList('simple_list', 'ALL');
+    </script>
+  </body>
+</html>

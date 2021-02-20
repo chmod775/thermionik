@@ -8,3 +8,4 @@
 
 - Better to use a Proxy to monitor block configs changes? (instead to rely only on SetConfigs)
 - Optimize InitCode, do not duplicate code of same blocks (like #include <stdlib.h>, etc...)
+- Support for function overload (multiple argument types)

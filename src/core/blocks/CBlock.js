@@ -171,5 +171,17 @@ class CPlug_Grid extends CBlock {
   }
 }
 
+class CSocket extends CBlock {
+  constructor(name, isPlate) {
+    super(name);
+    this.plugConfigs = { isPlate: isPlate };
+  }
+
+  ExternalPins() { console.error("ExternalPins NOT IMPLEMENTED."); return null; }
+}
+
 CBlock.PlatePlug = CPlug_Plate;
 CBlock.GridPlug = CPlug_Grid;
+CBlock.Socket = CSocket;
+
+CBlock.Step = null;

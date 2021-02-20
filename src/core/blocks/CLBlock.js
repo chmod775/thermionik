@@ -112,6 +112,91 @@ class CLSequence_Conditional extends CLSequence {
   }
 }
 
+/* ##### Plugs ##### */
+class CLInternalPlug extends CBlock.Socket {
+  constructor(name, isPlate) {
+    super(name, isPlate);
+  }
+}
+
+class StepDefaultPlate extends CLInternalPlug {
+  constructor() {
+    super("StepDefaultPlate", true);
+  }
+
+  Init() {
+    this.SetPins(
+      [
+      ]
+    );
+  }
+
+  ExternalPins() { return [ PinPlate.Create('Active', 'bool', 'false') ]; }
+}
+class StepDefaultGrid extends CLInternalPlug {
+  constructor() {
+    super("StepDefaultGrid", false);
+  }
+
+  Init() {
+    this.SetPins(
+      [
+        PinPlate.Create('Active', 'bool', 'false'),
+        PinPlate.Create('EntryShot', 'bool', 'false'),
+        PinPlate.Create('ExitShot', 'bool', 'false')
+      ]
+    );
+  }
+
+  ExternalPins() { return []; }
+}
+
+class StepPlate extends CLInternalPlug {
+  constructor() {
+    super("StepPlate", true);
+  }
+
+  Init() {
+    this.SetPins(
+      [
+        PinGrid.Create('ToPlate', this.configs.type, this.configs.init),
+      ]
+    );
+  }
+  
+  static DefaultConfigs() {
+    return {
+      id: `plate_${this.guid}`,
+      type: 'bool',
+      init: 'false'
+    }
+  }
+
+  ExternalPins() { return [ PinPlate.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
+}
+class StepGrip extends CLInternalPlug {
+  constructor() {
+    super("StepGrip", false);
+  }
+
+  Init() {
+    this.SetPins(
+      [
+        PinPlate.Create('FromGrid', this.configs.type, this.configs.init)
+      ]
+    );
+  }
+
+  static DefaultConfigs() {
+    return {
+      id: `grid_${this.guid}`,
+      type: 'bool',
+      init: 'false'
+    }
+  }
+
+  ExternalPins() { return [ PinGrid.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
+}
 
 class CLStep {
   constructor(id, block) {
@@ -139,16 +224,16 @@ class CLStep {
   }
 
   UpdatePlugs() {
+    let p_defGrid = StepDefaultGrid.Create();
+    let p_defPlate = StepDefaultPlate.Create();
+
     this.block.SetPlugs(
       [
-        PlugGrid.Create('Activate', 'bool', 'false'),
-        PlugGrid.Create('EntryShot', 'bool', 'false'),
-        PlugGrid.Create('ExitShot', 'bool', 'false'),
-
-        PlugPlate.Create('Active', 'bool', 'false')
+        p_defGrid,
+        p_defPlate
       ]
-      .concat(this.customExitPlates.map(p => PlugPlate.Create(p, 'bool', 'false')))
-      .concat(this.customGrids.map(p => PlugGrid.Create(p, 'bool', 'false')))
+      .concat(this.customExitPlates.map(p => StepPlate.Create(p, 'bool', 'false')))
+      .concat(this.customGrids.map(p => StepGrid.Create(p, 'bool', 'false')))
     );
   }
 
@@ -166,14 +251,14 @@ class CLStep {
   static CreateDefault(id) {
     let blockIstance = new WLBlock(`Step__${id}`);
     let ret = new CLStep(id, blockIstance);
-
+/*
     ret.SetExitPlates(['Done']);
 
     blockIstance.ConnectPlugs([
       blockIstance.FindPlugByName('Activate'),
       blockIstance.FindPlugByName('Done')
     ]);
-
+*/
     return ret;
   }
 }

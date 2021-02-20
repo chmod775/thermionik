@@ -1,13 +1,12 @@
-class WLInternalPlug extends CBlock {
-  constructor(name) {
-    super(name);
+class WLInternalPlug extends CBlock.Socket {
+  constructor(name, isPlate) {
+    super(name, isPlate);
   }
 }
 
 class PlugPlate extends WLInternalPlug {
   constructor() {
-    super("PlugPlate");
-    this.plugConfigs = { isPlate: true };
+    super("PlugPlate", true);
   }
 
   Init() {
@@ -26,13 +25,12 @@ class PlugPlate extends WLInternalPlug {
     }
   }
 
-  AsPin() { return PinPlate.Create(this.configs.id, this.configs.type, this.configs.init); }
+  ExternalPins() { return [ PinPlate.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
 }
 
 class PlugGrid extends WLInternalPlug {
   constructor() {
-    super("PlugGrid");
-    this.plugConfigs = { isPlate: false };
+    super("PlugGrid", false);
   }
 
   Init() {
@@ -51,7 +49,7 @@ class PlugGrid extends WLInternalPlug {
     }
   }
 
-  AsPin() { return PinGrid.Create(this.configs.id, this.configs.type, this.configs.init); }
+  ExternalPins() { return [ PinGrid.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
 }
 
 class WLBlock extends CBlock {
@@ -86,8 +84,8 @@ class WLBlock extends CBlock {
 
     let pins = [];
     for (var p of this.plugs) {
-      if (p instanceof WLInternalPlug)
-        pins.push(p.AsPin());
+      if (p instanceof CSocket)
+        pins = pins.concat(p.ExternalPins());
 
       this.plug[p.configs.id] = p;
       if (p.plugConfigs.isPlate) {
@@ -289,6 +287,7 @@ class WLBlock extends CBlock {
   }
 }
 
+/* ##### Plugs ##### */
 class WLPlug_Plate extends WLBlock {
   constructor(name) {
     super(name);
@@ -305,3 +304,9 @@ class WLPlug_Grid extends WLBlock {
 
 WLBlock.PlatePlug = WLPlug_Plate;
 WLBlock.GridPlug = WLPlug_Grid;
+
+/* ##### CL Step ##### */
+
+
+
+WLBlock.Step = null;

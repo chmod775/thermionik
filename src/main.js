@@ -170,16 +170,6 @@ class Main extends WLBlock {
     this.SetPlugs([ p_D1, p_D2, p_D10, p_D11, p_di_2, p_do_13, p_do_oled ]);
 
     // Blocks
-    /*
-    let b1 = Block_OneShot.Create();
-    let b2 = Block_Counter.Create();
-    let b3 = Block_Counter.Create();
-    
-    let b4 = Block_And.Create({ size: 10 });
-    let b5 = Block_WL.Create();
-    let b6 = Block_And.Create({ size: 2 });
-*/
-
     let b7 = Block_Not.Create();
 
     // Wiring
@@ -200,60 +190,21 @@ class Main extends WLBlock {
       p_di_2.pin.value,
       p_do_oled.pin.value_2
     ]);
-/*
-    this.ConnectWire([
-      b1.pin.out,
-      b2.pin.inc,
-      b3.pin.reset
-    ]);
-
-    this.ConnectWire([
-      p_D2,
-      b5.pin.in
-    ]);
-
-    this.ConnectWire([
-      b2.pin.reset,
-      b5.pin.out
-    ]);
-
-    this.ConnectWire([
-      p_D1,
-      b6.pin.in_0
-    ]);
-
-    this.ConnectWire([
-      p_D2,
-      b6.pin.in_1
-    ]);
-
-    this.ConnectWire([
-      b6.pin.out,
-      p_D10
-    ]);
-
-    this.ConnectWire([
-      p_D1,
-      p_D11
-    ])
-    */
   }
 }
 
 // CL Test
-/*
+
 class Dispenser extends CLBlock {
   constructor() {
     super("Dispenser");
   }
 
   Init() {
-    this.SetPlugs(
-      [
-        PlugPlate.Create('Work_A', 'bool', 'false'),
-        PlugPlate.Create('Rest_A', 'bool', 'false')
-      ]
-    );
+    let p_Work_A = PlugPlate.Create({ id: 'Work_A', type: 'bool', init: 'false'});
+    let p_Rest_A = PlugPlate.Create({ id: 'Rest_A', type: 'bool', init: 'false'});
+
+    this.SetPlugs([ p_Work_A, p_Rest_A ]);
 
     let s001 = CLStep.CreateDefault('Init');
     let s002 = CLStep.CreateDefault('WaitStart');
@@ -299,12 +250,13 @@ class Dispenser extends CLBlock {
       s007a
     ]);
 
-    this.SetSequence(seq);
-
-    this.ConnectPlugs([
-      s003a.block.FindPlugByName("Active"),
-      this.FindPlugByName("Work_A")
+//    this.SetSequence(seq);
+/*
+    this.ConnectWire([
+      p_di_2.pin.value,
+      p_do_oled.pin.value_2
     ]);
+*/
   }
 }
 
@@ -312,7 +264,7 @@ class Dispenser extends CLBlock {
 
 
 let b7 = Dispenser.Create();
-*/
+
 let mainBlock = Main.Create();
 
 let mainBoard = ArduinoUno_Board.Create(mainBlock);
