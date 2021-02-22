@@ -136,12 +136,6 @@ class Block {
     this.settings = {}; // Will be in final code
 
     this.plugConfigs = null; // BLOCK: null, PLUG: { isPlate: false }
-
-    this.gui = {
-      svgBody: null,
-      svgName: null,
-      svgPlugs: []
-    };
   }
 
   static Create(configs) {

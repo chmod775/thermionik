@@ -156,18 +156,12 @@ class Main extends WLBlock {
 
   Init() {
     // Plugs
-    let p_D1 = PlugGrid.Create({ id: 'D1', type: 'bool', init: 'false'});
-    let p_D2 = PlugGrid.Create({ id: 'D2', type: 'bool', init: 'false'});
-    
     let p_di_2 = Arduino_DigitalInput_Plug.Create({ pin: 2 });
-
-    let p_D10 = PlugPlate.Create({ id: 'D10', type: 'bool', init: 'false'});
-    let p_D11 = PlugPlate.Create({ id: 'D11', type: 'int', init: '0'});
 
     let p_do_13 = Arduino_DigitalOutput_Plug.Create({ pin: 3 });
     let p_do_oled = Arduino_OLEDNumber_Plug.Create({ n_values: 3 });
 
-    this.SetPlugs([ p_D1, p_D2, p_D10, p_D11, p_di_2, p_do_13, p_do_oled ]);
+    this.SetPlugs([ p_di_2, p_do_13, p_do_oled ]);
 
     // Blocks
     let b7 = Block_Not.Create();
@@ -190,11 +184,14 @@ class Main extends WLBlock {
       p_di_2.pin.value,
       p_do_oled.pin.value_2
     ]);
+
+    // GUI
+
   }
 }
 
 // CL Test
-
+/*
 class Dispenser extends CLBlock {
   constructor() {
     super("Dispenser");
@@ -251,22 +248,35 @@ class Dispenser extends CLBlock {
     ]);
 
 //    this.SetSequence(seq);
-/*
+
     this.ConnectWire([
       p_di_2.pin.value,
       p_do_oled.pin.value_2
     ]);
-*/
+
   }
 }
+*/
 
 
-
-
-let b7 = Dispenser.Create();
+//let b7 = Dispenser.Create();
 
 let mainBlock = Main.Create();
-
 let mainBoard = ArduinoUno_Board.Create(mainBlock);
 
-console.log(mainBoard.Generate());
+// GUI
+let renderJS = SVG().addTo('#render').size('100%', '100%');
+
+renderJS.clear();
+
+let pattern = renderJS.pattern(24, 24, function(add) {
+  add.line(24, 0, 24, 24).stroke('#aaa');
+  add.line(0, 24, 24, 24).stroke('#aaa');
+})
+renderJS.rect('100%', '100%').fill(pattern);
+
+let workspace = new WLBlock.Workspace(renderJS, mainBlock);
+
+
+
+//console.log(mainBoard.Generate());
