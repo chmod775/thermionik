@@ -140,20 +140,20 @@ class Block {
 
   static Create(configs) {
     let ret = new this();
-    ret.SetSettings(this.DefaultSettings());
-    ret.SetConfigs(Object.assign(this.DefaultConfigs(), configs || {}));
+    ret.SetSettings(this.$DefaultSettings());
+    ret.SetConfigs(Object.assign(this.$DefaultConfigs(), configs || {}));
     return ret;
   }
 
   Destroy() {
     this.guid = '//' + this.guid;
-    this.Deinit();
+    this.$Deinit();
   }
 
   /* ### Setters ### */
   SetConfigs(configs) {
     this.configs = configs;
-    this.Init();
+    this.$Init();
   }
 
   SetSettings(settings) {
@@ -161,13 +161,15 @@ class Block {
   }
 
   /* ### Utilities ### */
+  IsPlug() { return this.plugConfigs != null; }
+
   IsEqual(block) {
     return (this == block);
   }
 
   Hash() {
     let jsonActualConfigs = JSON.stringify(this.configs);
-    let jsonDefaultConfigs = JSON.stringify(this.constructor.DefaultConfigs());
+    let jsonDefaultConfigs = JSON.stringify(this.constructor.$DefaultConfigs());
     if (jsonActualConfigs == jsonDefaultConfigs) return '';
 
     var hashInt = Helpers.hashString(jsonActualConfigs);
@@ -180,12 +182,12 @@ class Block {
   }
 
   /* ### Requirements ### */
-  Init() { console.error("Init NOT IMPLEMENTED."); return null; }
-  Deinit() { console.error("Init NOT IMPLEMENTED."); return null; }
-  GenerateSource() { console.error("GenerateSource NOT IMPLEMENTED."); return null; }
+  $Init() { console.error("Init NOT IMPLEMENTED."); return null; }
+  $Deinit() { console.error("Init NOT IMPLEMENTED."); return null; }
+  $GenerateSource() { console.error("GenerateSource NOT IMPLEMENTED."); return null; }
 
-  static DefaultConfigs() { return {}; }
-  static DefaultSettings() { return {}; }
+  static $DefaultConfigs() { return {}; }
+  static $DefaultSettings() { return {}; }
 }
 
 class Compiler {

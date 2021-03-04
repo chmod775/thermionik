@@ -31,6 +31,7 @@
           display: flex;
           align-items: center;
           height: 100%;
+          z-index: 100;
       }
 
 
@@ -38,6 +39,7 @@
           display: block;
           margin: 0 auto;
           width: 50%;
+          z-index: 100;
       }
     </style>
 
@@ -63,7 +65,7 @@
           {
             border-radius: 10px;
             border: 2px solid #F5F5F5;
-            background-color: #5e3843;
+            background-color: #5e3843ff;
           }
     </style>
 
@@ -74,6 +76,7 @@
         top: 10px;
         width: 8vw;
         filter: drop-shadow(2px 4px 6px #000000a0);
+        z-index: 100;
       }
       .mainmenu > img {
         width: 100%;
@@ -83,11 +86,12 @@
         height: 48px;
         width: auto;
         line-height: 48px;
-        border: 2px solid #5e3843;
-        color: #5e3843;
+        border: 2px solid #5e3843ff;
+        color: #5e3843ff;
         background-color: #dcdcaa;
         border-radius: 24px;
         text-align: center;
+        cursor: pointer;
       }
       .mainmenu > .dot > span {
         display: none;
@@ -101,6 +105,7 @@
         width: 15vw;
         filter: drop-shadow(2px 4px 6px #000000a0);
         text-align: center;
+        z-index: 100;
       }
       select {
         width: 80% !important;
@@ -109,14 +114,46 @@
         height: 48px;
         width: auto;
         line-height: 48px;
-        border: 2px solid #5e3843;
-        color: #5e3843;
+        border: 2px solid #5e3843ff;
+        color: #5e3843ff;
         background-color: #dcdcaa;
         border-radius: 24px;
         text-align: center;
+        cursor: pointer;
       }
       .boardmenu > .dot > span {
         display: none;
+      }
+
+      .boardmenu .board {
+        position: relative;
+      }
+      .boardmenu .board > div {
+        opacity: 0;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%,-50%);
+        border: 2px solid #5e3843ff;
+        color: #5e3843ff;
+        background-color: #dcdcaa;
+        height: 48px;
+        width: 40%;
+        line-height: 48px;
+        border-radius: 24px;
+        text-align: center;
+        cursor: pointer;
+      }
+      .boardmenu .board > img {
+        width: 80%;
+        cursor: pointer;
+      }
+      .boardmenu .board:hover > img {
+        opacity: 0.4;
+      }
+
+      .boardmenu .board:hover > div {
+        opacity: 1;
       }
     </style>
     <style>
@@ -129,22 +166,39 @@
         text-align: center;
       }
     </style>
+    <style>
+      .workbox {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        overflow: auto;
+        z-index: 0;
+      }
+    </style>
   </head>
   <body>
     <div class="mainmenu">
       <img class="logo" src="../../logo_final.svg" height="">
       <div class="dot mt-3">LOGIN</div>
+      <div class="dot mt-3">EXAMPLES</div>
+      <div class="dot mt-3">DOWNLOAD</div>
     </div>
 
     <div class="boardmenu">
       <h3>Selected BOARD</h3>
+      <h5>(Hover to change)</h5>
 <!--
       <select class="mb-2 form-select">
         <option>Arduino UNO</option>
         <option>Raspberry PICO</option>
       </select>
 -->
-      <img src="assets/arduinoUNO.png" width="80%">
+      <div class="board">
+        <img src="assets/arduinoUNO.png">
+        <div>Change</div>
+      </div>
 
       <div class="dot mt-3 mb-3">GENERATE PROJECT .ino</div>
 
@@ -155,24 +209,13 @@
       <h2>3 Simple steps for the future of <i>development</i></h2>
     </div>
 
-    <div id="render" style="width:4000px;height:3000px">
-      <!--
-      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
-            <path d="M 8 0 L 0 0 0 8" fill="none" stroke="gray" stroke-width="0.5"/>
-          </pattern>
-          <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
-            <rect width="80" height="80" fill="url(#smallGrid)"/>
-            <path d="M 80 0 L 0 0 0 80" fill="none" stroke="gray" stroke-width="1"/>
-          </pattern>
-        </defs>
-    
-        <rect width="100%" height="100%" fill="url(#grid)" />
-      </svg>
-      -->
+    <div class="workbox dragscroll">
+      <div id="render" style="width:4000px;height:3000px"></div>
     </div>
 
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dragscroll/0.0.8/dragscroll.min.js" integrity="sha512-/ncZdOhQm5pgj5KHy720Ck7XF5RzYK6rtUsLNnGcitXrKT3wUYzTrPlOSG7SdL2kDzkuLEOFvrQRyllcZkeAlg==" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
@@ -187,6 +230,8 @@
     <script src="../core/generators/cgenerator.js"></script>
 
     <script src="../core/boards/ArduinoUno_Board.js"></script>
+
+    <script src="../gui/gui.js"></script>
 
     <script src="../main.js"></script>
 

@@ -9,7 +9,7 @@ class PlugPlate extends WLInternalPlug {
     super("PlugPlate", true);
   }
 
-  Init() {
+  $Init() {
     this.SetPins(
       [
         PinGrid.Create('ToPlate', this.configs.type, this.configs.init),
@@ -17,7 +17,7 @@ class PlugPlate extends WLInternalPlug {
     );
   }
   
-  static DefaultConfigs() {
+  static $DefaultConfigs() {
     return {
       id: `plate_${this.guid}`,
       type: 'bool',
@@ -33,7 +33,7 @@ class PlugGrid extends WLInternalPlug {
     super("PlugGrid", false);
   }
 
-  Init() {
+  $Init() {
     this.SetPins(
       [
         PinPlate.Create('FromGrid', this.configs.type, this.configs.init)
@@ -41,7 +41,7 @@ class PlugGrid extends WLInternalPlug {
     );
   }
 
-  static DefaultConfigs() {
+  static $DefaultConfigs() {
     return {
       id: `grid_${this.guid}`,
       type: 'bool',
@@ -134,7 +134,7 @@ class WLBlock extends CBlock {
     // Automagically add blocks from pins
     for (var p of pins) {
       let pBlock = p.block;
-      if (!pBlock.plugConfigs)
+      if (!pBlock.IsPlug())
         if (!this.blocks.includes(pBlock))
           this.AddBlock(pBlock);
     }
@@ -142,7 +142,7 @@ class WLBlock extends CBlock {
     return plateWire;
   }
 
-  GenerateSource() {
+  $GenerateSource() {
     let uName = this.UniqueName();
 
     let genChildrensDataElements = [];
@@ -166,7 +166,7 @@ class WLBlock extends CBlock {
       // Generate dependencies
       var blockCode = this.dependencies[cacheKey];
       if (!blockCode) {
-        blockCode = b.GenerateSource();
+        blockCode = b.$GenerateSource();
         this.dependencies[cacheKey] = blockCode;
       }
 
@@ -283,7 +283,7 @@ class WLBlock extends CBlock {
     this.LoopCode = genChildrensLoopCall.join('\n');
     
     // Call super generator
-    return super.GenerateSource();
+    return super.$GenerateSource();
   }
 }
 

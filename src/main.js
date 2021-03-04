@@ -5,7 +5,7 @@ class Block_OneShot extends CBlock {
     super("oneshot");
   }
 
-  Init() {
+  $Init() {
     this.SetPins(
       [
         PinGrid.Create('in', 'bool', 'true'),
@@ -35,7 +35,7 @@ class Block_Counter extends CBlock {
     super("counter");
   }
 
-  Init() {
+  $Init() {
     this.author = "Michele Trombetta";
 
     this.SetPins(
@@ -68,7 +68,7 @@ class Block_Counter extends CBlock {
     ;
   }
 
-  static DefaultSettings() {
+  static $DefaultSettings() {
     return {
       target: 100
     };
@@ -77,10 +77,10 @@ class Block_Counter extends CBlock {
 
 class Block_Not extends CBlock {
   constructor() {
-    super("not");
+    super("NOT");
   }
 
-  Init() {
+  $Init() {
     this.SetPins(
       [
         PinGrid.Create('in', 'bool', 'false'),
@@ -105,7 +105,7 @@ class Block_And extends CBlock {
     super("and");
   }
 
-  Init() {
+  $Init() {
     let nGrids = Math.max(+this.configs.size, 2);
 
     let plugs = [PinPlate.Create('out', 'bool', 'false')];
@@ -124,7 +124,7 @@ class Block_And extends CBlock {
     return `*out = ${gridNames.join(' && ')};`;
   }
 
-  static DefaultConfigs() {
+  static $DefaultConfigs() {
     return { size: 2 };
   }
 }
@@ -134,7 +134,7 @@ class Block_WL extends WLBlock {
     super("WLLLLL");
   }
 
-  Init() {
+  $Init() {
     // Plugs
     let p_in = PlugGrid.Create({ id: 'in', type: 'bool', init: 'false'});
     let p_out = PlugPlate.Create({ id: 'out', type: 'bool', init: 'false'});
@@ -154,7 +154,7 @@ class Main extends WLBlock {
     super("main");
   }
 
-  Init() {
+  $Init() {
     // Plugs
     let p_di_2 = Arduino_DigitalInput_Plug.Create({ pin: 2 });
 
@@ -197,7 +197,7 @@ class Dispenser extends CLBlock {
     super("Dispenser");
   }
 
-  Init() {
+  $Init() {
     let p_Work_A = PlugPlate.Create({ id: 'Work_A', type: 'bool', init: 'false'});
     let p_Rest_A = PlugPlate.Create({ id: 'Rest_A', type: 'bool', init: 'false'});
 
@@ -268,12 +268,6 @@ let mainBoard = ArduinoUno_Board.Create(mainBlock);
 let renderJS = SVG().addTo('#render').size('100%', '100%');
 
 renderJS.clear();
-
-let pattern = renderJS.pattern(24, 24, function(add) {
-  add.line(24, 0, 24, 24).stroke('#aaa');
-  add.line(0, 24, 24, 24).stroke('#aaa');
-})
-renderJS.rect('100%', '100%').fill(pattern);
 
 let workspace = new WLBlock.Workspace(renderJS, mainBlock);
 
