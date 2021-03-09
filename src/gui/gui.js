@@ -16,7 +16,7 @@ class Block_Render {
     this.svgSeparator = null;
     this.svgPins = [];
 
-    this.Render();
+    this.Create();
   }
 
   SetSize(w, h) {
@@ -32,7 +32,7 @@ class Block_Render {
     this.svgSeparator.plot(0, separatorY, this.size.w, separatorY);
   }
 
-  Render() {
+  Create() {
     this.svg = new SVG.G();
 
     // Create body
@@ -55,6 +55,10 @@ class Block_Render {
 
     return this.svg;
   }
+
+  Update() {
+
+  }
 }
 
 Block.Render = Block_Render;
@@ -64,22 +68,51 @@ class WLBlock_Workspace {
     this.block = block;
     this.svg = svg;
 
+    this.size = { w: 6, h: 10 };
+
+    this.map = {
+      grids: [],
+      blocks: [], // Matrix
+      plates: [],
+
+      wiresCount: { cols: {}, rows: {} }
+    };
+
+    this.Generate();
+
     // Render wiring
 
     // Render blocks
-    this.firstBlockPos = { x: 0, y: 0 };
     this.svgTubes = new SVG.G();
     this.svg.add(this.svgTubes);
-    this.RenderTubes();
+    //this.RenderTubes();
 
     // Create grid and add to root svg
     this.svgGrid = new SVG.G();
     this.svg.add(this.svgGrid);
-    this.grid = {
-      blocks: { w: 5, h: 5 },
-      wiresCount: { cols: {}, rows: {} }
-    };
+
     this.RenderGrid();
+  }
+
+  Generate() {
+    // Plugs
+    for (var p of this.block.plugs) {
+      let arr = p.IsPlatePlug() ? this.map.plates : this.map.grids;
+      p.guiConfigs.row = p.guiConfigs.row ?? arr.length;
+      arr[p.guiConfigs.row] = new Block.Render(p);
+    }
+
+    // Blocks
+    var bCol = -1;
+    var bRow = -1;
+
+    for (var b of this.block.blocks) {
+      bCol = b.guiConfigs.col = (b.guiConfigs.col ?? (bCol + 1));
+      bRow = b.guiConfigs.row = (b.guiConfigs.row ?? (bRow + 1));
+
+      this.map.blocks[bCol] = this.map.blocks[bCol] ?? [];
+      this.map.blocks[bCol][bRow] = new Block.Render(b);
+    }
   }
 
   RenderPlugs() {
@@ -93,7 +126,6 @@ class WLBlock_Workspace {
   RenderTubes() {
     this.svgTubes.clear();
 
-
     var bx = 0;
     var by = 0;
 
@@ -104,6 +136,9 @@ class WLBlock_Workspace {
       let renderedBlock = new Block.Render(b);
       let renderedBlockSVG = renderedBlock.Render();
 
+      if (b.guiConfigs)
+        bx = b.guiConfigs.x;
+      
       renderedBlockSVG.move(startx + (bx * cellSize), starty);
 
       this.svgTubes.add(renderedBlockSVG);
@@ -118,14 +153,14 @@ class WLBlock_Workspace {
   RenderGrid() {
     this.svgGrid.clear();
 
-    let startx = 100;
-    let starty = 100;
+    let startx = 500;
+    let starty = 500;
 
     var topWiresCount, leftWiresCount;
 
     var by = starty;
-    for (var y = 0; y < this.grid.blocks.h; y++) {
-      topWiresCount = Math.max(3, this.grid.wiresCount.rows[y] || 0);
+    for (var y = 0; y < this.size.h; y++) {
+      topWiresCount = Math.max(3, this.map.wiresCount.rows[y] || 0);
       let padTop = topWiresCount * wireSize;
 
       for (var wIdx = 0; wIdx < topWiresCount; wIdx++) {
@@ -136,8 +171,8 @@ class WLBlock_Workspace {
       by += padTop;
 
       var bx = startx;
-      for (var x = 0; x < this.grid.blocks.w; x++) {
-        leftWiresCount = Math.max(3, this.grid.wiresCount.cols[x] || 0);
+      for (var x = 0; x < this.size.w; x++) {
+        leftWiresCount = Math.max(3, this.map.wiresCount.cols[x] || 0);
         let padLeft = leftWiresCount * wireSize;
 
         if (y == 0) {

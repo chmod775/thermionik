@@ -186,7 +186,7 @@ class Main extends WLBlock {
     ]);
 
     // GUI
-
+    b7.SetGui({ col: 3, row: 2 })
   }
 }
 

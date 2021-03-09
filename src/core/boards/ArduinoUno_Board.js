@@ -119,7 +119,7 @@ class Arduino_DigitalInput_Plug extends CBlock.GridPlug {
     super("Arduino_DigitalInput_Plug");
   }
 
-  Init() {
+  $Init() {
     this.SetPins(
       [
         PinPlate.Create('value', 'bool', 'false')
@@ -127,7 +127,7 @@ class Arduino_DigitalInput_Plug extends CBlock.GridPlug {
     );
   }
 
-  static DefaultConfigs() {
+  static $DefaultConfigs() {
     return { pin: 0 };
   }
 
@@ -147,7 +147,7 @@ class Arduino_DigitalOutput_Plug extends CBlock.PlatePlug {
     super("Arduino_DigitalOutput_Plug");
   }
 
-  Init() {
+  $Init() {
     this.SetPins(
       [
         PinGrid.Create('value', 'bool', 'false')
@@ -155,7 +155,7 @@ class Arduino_DigitalOutput_Plug extends CBlock.PlatePlug {
     );
   }
 
-  static DefaultConfigs() {
+  static $DefaultConfigs() {
     return { pin: 0 };
   }
 
@@ -175,14 +175,14 @@ class Arduino_OLEDNumber_Plug extends CBlock.PlatePlug {
     super("Arduino_OLED_Plug");
   }
 
-  Init() {
+  $Init() {
     let pins = [];
     for (var i = 0; i < this.configs.n_values; i++)
       pins.push(PinGrid.Create(`value_${i}`, 'float', 'false'));
     this.SetPins(pins);
   }
 
-  static DefaultConfigs() {
+  static $DefaultConfigs() {
     return { n_values: 1, width: 128, height: 64, dc_pin: 6, cs_pin: 7, reset_pin: 8 };
   }
 

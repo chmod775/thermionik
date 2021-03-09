@@ -136,6 +136,7 @@ class Block {
     this.settings = {}; // Will be in final code
 
     this.plugConfigs = null; // BLOCK: null, PLUG: { isPlate: false }
+    this.guiConfigs = {};
   }
 
   static Create(configs) {
@@ -160,8 +161,14 @@ class Block {
     this.settings = settings;
   }
 
+  SetGui(guiConfigs) {
+    this.guiConfigs = guiConfigs;
+  }
+
   /* ### Utilities ### */
   IsPlug() { return this.plugConfigs != null; }
+  IsPlatePlug() { return this.plugConfigs.isPlate; }
+
 
   IsEqual(block) {
     return (this == block);

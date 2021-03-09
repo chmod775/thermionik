@@ -74,7 +74,8 @@
         position: fixed;
         left: 10px;
         top: 10px;
-        width: 8vw;
+        width: 150px;
+        /*width: 8vw;*/
         filter: drop-shadow(2px 4px 6px #000000a0);
         z-index: 100;
       }
@@ -95,6 +96,39 @@
       }
       .mainmenu > .dot > span {
         display: none;
+      }
+    </style>
+    <style>
+      .board {
+        position: relative;
+        text-align: center;
+      }
+      .board > div {
+        opacity: 0;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%,-50%);
+        border: 2px solid #5e3843ff;
+        color: #5e3843ff;
+        background-color: #dcdcaa;
+        height: 48px;
+        width: 40%;
+        line-height: 48px;
+        border-radius: 24px;
+        text-align: center;
+        cursor: pointer;
+      }
+      .board > img {
+        width: 80%;
+        cursor: pointer;
+      }
+      .board:hover > img {
+        opacity: 0.4;
+      }
+
+      .board:hover > div {
+        opacity: 1;
       }
     </style>
     <style>
@@ -124,37 +158,6 @@
       .boardmenu > .dot > span {
         display: none;
       }
-
-      .boardmenu .board {
-        position: relative;
-      }
-      .boardmenu .board > div {
-        opacity: 0;
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%,-50%);
-        border: 2px solid #5e3843ff;
-        color: #5e3843ff;
-        background-color: #dcdcaa;
-        height: 48px;
-        width: 40%;
-        line-height: 48px;
-        border-radius: 24px;
-        text-align: center;
-        cursor: pointer;
-      }
-      .boardmenu .board > img {
-        width: 80%;
-        cursor: pointer;
-      }
-      .boardmenu .board:hover > img {
-        opacity: 0.4;
-      }
-
-      .boardmenu .board:hover > div {
-        opacity: 1;
-      }
     </style>
     <style>
       .introsteps {
@@ -176,6 +179,42 @@
         overflow: auto;
         z-index: 0;
       }
+
+      .map {
+        position: absolute;
+        left: 10px;
+        bottom: 20px;
+        height: 150px;
+        width: 150px;
+        background: white;
+        border: 2px solid #5e3843ff;
+        z-index: 2000;
+        filter: drop-shadow(2px 4px 6px #000000a0);
+        border-radius: 5px;
+      }
+    </style>
+    <style>
+      .promptmenu {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        height: 100px;
+        width: 400px;
+        z-index: 2100;
+        filter: drop-shadow(2px 4px 6px #000000a0);
+      }
+
+      .promptmenu > input {
+        height: 30px;
+        width: 100%;
+        line-height: 48px;
+        border: 2px solid #5e3843ff;
+        background-color: white;
+        border-radius: 24px;
+        text-align: left;
+        padding-left: 15px;
+        outline: none;
+      }
     </style>
   </head>
   <body>
@@ -184,29 +223,28 @@
       <div class="dot mt-3">LOGIN</div>
       <div class="dot mt-3">EXAMPLES</div>
       <div class="dot mt-3">DOWNLOAD</div>
-    </div>
 
-    <div class="boardmenu">
-      <h3>Selected BOARD</h3>
-      <h5>(Hover to change)</h5>
-<!--
-      <select class="mb-2 form-select">
-        <option>Arduino UNO</option>
-        <option>Raspberry PICO</option>
-      </select>
--->
-      <div class="board">
+      <div class="board mt-3">
+        <h3>BOARD</h3>
         <img src="assets/arduinoUNO.png">
         <div>Change</div>
       </div>
 
-      <div class="dot mt-3 mb-3">GENERATE PROJECT .ino</div>
+      <div class="dot mt-3 mb-3">GENERATE</div>
+    </div>
 
-      <h5>Required libraries:</h5>
+    <div class="boardmenu">
+
     </div>
 
     <div class="introsteps">
       <h2>3 Simple steps for the future of <i>development</i></h2>
+    </div>
+
+    <div class="map"></div>
+
+    <div class="promptmenu d-flex align-items-end">
+      <input placeholder="Execute command"/>
     </div>
 
     <div class="workbox dragscroll">
