@@ -189,9 +189,9 @@ class Block {
   }
 
   /* ### Requirements ### */
-  $Init() { console.error("Init NOT IMPLEMENTED."); return null; }
-  $Deinit() { console.error("Init NOT IMPLEMENTED."); return null; }
-  $GenerateSource() { console.error("GenerateSource NOT IMPLEMENTED."); return null; }
+  $Init() { console.error("$Init NOT IMPLEMENTED."); return null; }
+  $Deinit() { console.error("$Deinit NOT IMPLEMENTED."); return null; }
+  $GenerateSource() { console.error("$GenerateSource NOT IMPLEMENTED."); return null; }
 
   static $DefaultConfigs() { return {}; }
   static $DefaultSettings() { return {}; }

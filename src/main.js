@@ -271,6 +271,18 @@ renderJS.clear();
 
 let workspace = new WLBlock.Workspace(renderJS, mainBlock);
 
+let ui = new UI();
 
+ui.SetToolbox({
+  boards: [
+    ArduinoUno_Board
+  ],
+  tubes: [
+    Block_Not,
+    Block_And,
+    Block_OneShot,
+    Block_Counter
+  ]
+});
 
 //console.log(mainBoard.Generate());

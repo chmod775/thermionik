@@ -6,14 +6,15 @@ class CBlockCode {
 }
 
 class CBlock extends Block {
+  static lang() { return 'CBlock' };
+  
   constructor(name) {
     super(name);
-
-    this._lang = 'C';
 
     this.requirements = [];
 
     this.pins = [];
+    this.pin = { plate: {}, plates: [], grid: {}, grids: [] };
   }
 
   SetPins(pins) {
@@ -42,7 +43,7 @@ class CBlock extends Block {
     }
   }
 
-  GenerateSource() {
+  $GenerateSource() {
     let uName = this.UniqueName();
 
     let platePins = this.pin.plates;
@@ -151,7 +152,9 @@ class CBlock extends Block {
   }
 
   /* ### Requirements ### */
-  InitCode() { console.error("InitCode NOT IMPLEMENTED."); return TODO; }
+  InitCode() {
+    console.error("InitCode NOT IMPLEMENTED."); return TODO;
+  }
   SetupCode() { console.error("SetupCode NOT IMPLEMENTED."); return TODO; }
   LoopCode() { console.error("LoopCode NOT IMPLEMENTED."); return TODO; }
   Data() { return []; }

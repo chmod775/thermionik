@@ -13,7 +13,7 @@ class ArduinoUno_Board extends Board {
 
   Generate() {
     if (!this.mainBlock) { console.error("Mainblock cannot be null."); return null; }
-    let mainBlockSource = this.mainBlock.GenerateSource();
+    let mainBlockSource = this.mainBlock.$GenerateSource();
 
     let sources = Object.values(this.mainBlock.dependencies).concat([mainBlockSource]);
 

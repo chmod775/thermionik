@@ -53,12 +53,13 @@ class PlugGrid extends WLInternalPlug {
 }
 
 class WLBlock extends CBlock {
+  static lang() { return 'WLBlock' };
+
   constructor(name) {
     super(name);
   
-    this._lang = 'WL';
-
     this.plugs = [];
+    this.plug = { plate: {}, plates: [], grid: {}, grids: [] };
 
     this.blocks = [];
     this.wires = [];

@@ -264,10 +264,10 @@ class CLStep {
 }
 
 class CLBlock extends WLBlock {
+  static lang() { return 'CLBlock' };
+
   constructor(name) {
     super(name);
-  
-    this._lang = 'CL';
   }
 
   UpdateSteps() {
