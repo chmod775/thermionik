@@ -35,6 +35,57 @@ class UIEditor_WLBlock extends UIEditor {
       return UI_Feedback.Success(`Added block ${arg_name}.`, newBlockInstance);
     }
   );
+
+  $remove = new UI_Command(
+    'Remove block.',
+    [
+      { name: 'guid', desc: 'GUID of the block to remove'}
+    ],
+    (args) => {
+      let arg_guid = args.guid.toLowerCase();
+
+      let foundBlock = this.target.blocks.find(b => b.guid.toLowerCase() == arg_guid);
+      if (!foundBlock) { return UI_Feedback.Error(`Block with GUID ${arg_guid} not found.`); } 
+
+      this.target.RemoveBlock(foundBlock);
+
+      return UI_Feedback.Success(`Removed block ${arg_guid}.`, foundBlock);
+    }
+  );
+
+  $connect = new UI_Command(
+    'Connect two or more pins together.',
+    [
+      { name: 'pins', desc: 'List of pins to connect', variable: true }
+    ],
+    (args) => {
+      let arg_pins = args.pins;
+
+      let pinsToConnect = [];
+
+      for (var pId of arg_pins) {
+        let pId_parts = pId.split('.');
+        if (pId_parts.length != 2) { return UI_Feedback.Error(`Wrong format for pin ID ${pId}.`); }
+        let pBlockGUID = pId_parts[0];
+        let pName = pId_parts[1];
+
+        let foundBlock = this.target.blocks.find(b => b.guid.toLowerCase() == pBlockGUID);
+        if (!foundBlock) { return UI_Feedback.Error(`Pin block with GUID ${pBlockGUID} not found.`); } 
+
+        let foundBlockPin = foundBlock.pin[pName];
+        if (!foundBlockPin) { return UI_Feedback.Error(`Pin with name ${pName} not found in block with GUID ${pBlockGUID}.`); } 
+
+        pinsToConnect.push(foundBlockPin);
+      }
+
+      let retWire = this.target.ConnectWire(pinsToConnect);
+
+      if (retWire)
+        return UI_Feedback.Success(`Connected pins.`, retWire);
+      else
+        return UI_Feedback.Error(`Error connecting pins.`, pinsToConnect);
+    }
+  );
 }
 UIEditor.WLBlock = UIEditor_WLBlock;
 
@@ -122,7 +173,10 @@ class UI {
       let call_args = {};
       for (var argIdx in fn_args) {
         let arg = fn_args[argIdx];
-        call_args[arg.name] = cmd_parts[+argIdx] ?? null;
+        if (arg.variable) {
+          call_args[arg.name] = cmd_parts.splice(+argIdx);
+        } else
+          call_args[arg.name] = cmd_parts[+argIdx] ?? null;
       }
 
       let fn_ret = fn.callback.call(this, call_args);
