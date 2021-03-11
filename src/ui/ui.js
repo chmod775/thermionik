@@ -313,7 +313,9 @@ class UI {
         let foundEditor = this.editors.find(e => e.target == foundBlock);
         if (foundEditor) { return UI_Feedback.Error(`Block ${arg_name} already edited.`); }
 
-        this.CreateEditor(foundBlock, true);
+        let newBlockInstance = foundBlock.Create();
+
+        this.CreateEditor(newBlockInstance, true);
 
         return UI_Feedback.Success(`Edited block ${arg_name} in editor slot ${this.editors.length - 1}.`, this.activeEditor);
       }
@@ -323,7 +325,23 @@ class UI {
       'Save changes of actual editor.',
       [],
       (args) => {
-  
+        if (this.editors.length <= 1) return UI_Feedback.Error(`Cannot save main.`);
+
+        let block = this.activeEditor.target;
+        let blockEvalCode = block.$GenerateClass();
+
+        let ret = eval(blockEvalCode);
+
+        let foundTube = this.toolbox.tubes.findIndex(t => t.name == ret.name);
+        if (foundTube < 0)
+          this.toolbox.tubes.push(ret);
+        else
+          this.toolbox.tubes[foundTube] = ret;
+        
+        this.editors.pop();
+        this.activeEditor = this.editors[this.editors.length - 1];
+
+        return UI_Feedback.Success(`Block saved with success.`, this.activeEditor);
       }
     ),
 

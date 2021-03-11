@@ -217,7 +217,7 @@ class Generator {
   GenerateAssignment(source, destination) { console.error("GenerateAssignment NOT IMPLEMENTED."); return null; }
   GenerateClass(name, inherit, code) { console.error("GenerateClass NOT IMPLEMENTED."); return null; }
 
-  VariableDefinition(name, type) { console.error("VariableDefinition NOT IMPLEMENTED."); return null; }
+  VariableDefinition(name, type, init) { console.error("VariableDefinition NOT IMPLEMENTED."); return null; }
   AccessIndirect(parent, children) { console.error("AccessIndirect NOT IMPLEMENTED."); return null; }
   AccessDirect(parent, children) { console.error("AccessDirect NOT IMPLEMENTED."); return null; }
   GetReference(element) { console.error("GetReference NOT IMPLEMENTED."); return null; }

@@ -299,4 +299,15 @@ ui.Execute("ADD BLOCK Block_Not");
 ui.Execute('connect b_8.out b_7.in_2');
 ui.Execute('connect b_8.out b_7.in_2 b_7.in_4')
 
+ui.Execute('create wl chmod')
+ui.Execute('editor save')
+
+ui.Execute("ADD BLOCK WLBlock_chmod");
+
+ui.Execute('editor edit WLBlock_chmod')
+ui.Execute("ADD BLOCK Block_Not");
+ui.Execute('editor save')
+
+// IT MUST UPDATE ALL THE CREATED INSTANCES OF WLBLOCK_CHMOD
+
 //console.log(mainBoard.Generate());

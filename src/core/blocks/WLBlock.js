@@ -458,10 +458,12 @@ class WLBlock extends CBlock {
       genInitFunction
     ].join('\n');
 
-    let genClassName = this.name.replace(/\W/g, '');
-    let genClass = generator.GenerateClass(`WLBlock_${genClassName}`, 'WLBlock', genClassCode);
+    let genClassName = `WLBlock_${this.name.replace(/\W/g, '')}`;
+    let genClass = generator.GenerateClass(genClassName, 'WLBlock', genClassCode);
 
-    return genClass;
+    let genEval = generator.VariableDefinition(genClassName, '', `(${genClass})`);
+
+    return `(${genClass})`;
   }
 }
 

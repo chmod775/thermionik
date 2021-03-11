@@ -61,8 +61,11 @@ class CGenerator extends Generator {
     return `${destination} = ${source};`;
   }
 
-  VariableDefinition(name, type) {
-    return `${type} ${name};`;
+  VariableDefinition(name, type, init) {
+    if (init)
+      return `${type} ${name} = ${init};`;
+    else
+      return `${type} ${name};`;
   }
   AccessIndirect(parent, children) {
     return `${parent}->${children}`;

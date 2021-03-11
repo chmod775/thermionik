@@ -56,8 +56,11 @@ class JSGenerator extends Generator {
     return `${destination} = ${source};`;
   }
 
-  VariableDefinition(name, type) {
-    return `var ${name}; // ${type}`;
+  VariableDefinition(name, type, init) {
+    if (init)
+      return `var ${name} = ${init}; // ${type}`;
+    else
+      return `var ${name}; // ${type}`;
   }
 
   StringLiteral(str) {
