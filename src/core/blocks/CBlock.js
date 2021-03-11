@@ -7,7 +7,7 @@ class CBlockCode {
 
 class CBlock extends Block {
   static lang() { return 'CBlock' };
-  
+
   constructor(name) {
     super(name);
 
@@ -15,6 +15,13 @@ class CBlock extends Block {
 
     this.pins = [];
     this.pin = { plate: {}, plates: [], grid: {}, grids: [] };
+  }
+
+  $Deinit() {
+    for (var p of this.pins) {
+      if (p.wire)
+        p.wire.DisconnectPin(p);
+    }
   }
 
   SetPins(pins) {

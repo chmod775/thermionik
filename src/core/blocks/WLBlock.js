@@ -77,6 +77,7 @@ class WLBlock extends CBlock {
   RemoveBlock(block) {
     this.blocks = this.blocks.filter(t => !t.IsEqual(block));
     block.Destroy();
+    this.CleanEmptyWires();
   }
 
   SetPlugs(plugs) {
@@ -101,9 +102,13 @@ class WLBlock extends CBlock {
     this.SetPins(pins);
   }
 
-  ConnectWire(items) {
-    let pins = [];
+  CleanEmptyWires() {
+    this.wires = this.wires.filter(w => (w.platePin != null) || (w.gridPins.length > 0));
+  }
 
+  ConnectWire(items) {
+    // Get pins from items (direct Pin or Plugs)
+    let pins = [];
     for (var i of items) {
       if (i instanceof Pin) pins.push(i);
       if (i instanceof WLInternalPlug) {
@@ -112,25 +117,48 @@ class WLBlock extends CBlock {
       }
     }
 
+    // Search plate in pins
     var foundPlates = pins.filter(p => p.isPlate);
-    if (foundPlates.length < 1) { console.error("Plate not found."); return null; }
     if (foundPlates.length > 1) { console.error("Multiple Plates found."); return null; }
+    let foundPlate = foundPlates[0] ?? null;
 
-    let foundPlate = foundPlates[0];
-
+    // Search grids in pins
     var foundGrids = pins.filter(p => !p.isPlate);
-    if (foundGrids.length < 1) { console.error("No Grids found."); return null; }
 
-    var plateWire = foundPlate.wire;
-    if (plateWire == null)
-      plateWire = new Wire(foundPlate);
+    // Get already connected wire (if present)
+    var destWire = null;
+    for (var g of foundGrids) { // If connected to Grids
+      if (g.wire != null) {
+        destWire = destWire ?? g.wire;
+        if (destWire != g.wire) { console.error("WTF? This is not supposed to happen."); return null; }
+      }
+    }
+    if (destWire == null) {
+      destWire = foundPlate.wire; // If connected to Plate
 
+      if (destWire == null) { // Create new one if not connected
+        if (foundPlate == null) { console.error("New wire require a Plate."); return null; }
+        destWire = new Wire(foundPlate);
+      }
+    }
+
+    if (destWire.gridPins.length == 0)
+      if (foundGrids.length == 0) { console.error("New wire require at least 1 Grid."); return null; }
+
+    // Attach Plate to Wire
+    if (foundPlate) {
+      if (destWire.platePin)
+        if (destWire.platePin != foundPlate) { console.error("Wire already connected to a Plate."); return null; }
+      destWire.SetPlate(foundPlate);
+    }
+
+    // Attach Grids to Wire
     for (var pg of foundGrids)
-      plateWire.ConnectGrid(pg);
+      destWire.ConnectGrid(pg);
 
     // Add to wires list
-    if (!this.wires.includes(plateWire))
-    this.wires.push(plateWire);
+    if (!this.wires.includes(destWire))
+      this.wires.push(destWire);
 
     // Automagically add blocks from pins
     for (var p of pins) {
@@ -140,7 +168,8 @@ class WLBlock extends CBlock {
           this.AddBlock(pBlock);
     }
 
-    return plateWire;
+    // Return wire
+    return destWire;
   }
 
   $GenerateSource() {

@@ -79,6 +79,8 @@ class Pin {
   SetBlock(block) { this.block = block; }
 
   ConnectToWire(wire) {
+    if (this.wire == wire) return false;
+
     if (this.wire != null) {
       console.error("Pin already connected to Wire.");
       return false;
@@ -129,8 +131,6 @@ class Block {
   constructor(name) {
     this.name = name;
     this.guid = Helpers.uuidv4();
-
-    this._lang = 'TRUMPET';
 
     this.configs = {}; // Impact only on code generation, so JS level
     this.settings = {}; // Will be in final code

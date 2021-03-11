@@ -285,4 +285,10 @@ ui.SetToolbox({
   ]
 });
 
+ui.Execute("BOARD ArduinoUno_Board");
+ui.Execute("ADD Block_And C3 {size:10}");
+ui.Execute("ADD Block_Not");
+ui.Execute('connect b_8.out b_7.in_2');
+ui.Execute('connect b_8.out b_7.in_2 b_7.in_4')
+
 //console.log(mainBoard.Generate());
