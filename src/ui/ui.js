@@ -6,8 +6,7 @@ class UIEditor {
 }
 
 class UIEditor_CBlock extends UIEditor {
-  $convert() {}
-  $generate() {}
+
 
 }
 UIEditor.CBlock = UIEditor_CBlock;
@@ -62,7 +61,7 @@ class UIEditor_WLBlock extends UIEditor {
   };
 
   $remove = new UI_Command(
-    'Remove block.',
+    'Remove block or plug.',
     [
       { name: 'guid', desc: 'GUID of the block to remove'}
     ],
@@ -70,11 +69,16 @@ class UIEditor_WLBlock extends UIEditor {
       let arg_guid = args.guid.toLowerCase();
 
       let foundBlock = this.target.blocks.find(b => b.guid.toLowerCase() == arg_guid);
-      if (!foundBlock) { return UI_Feedback.Error(`Block with GUID ${arg_guid} not found.`); } 
+      let foundPlug = this.target.plug.plates.find(b => b.guid.toLowerCase() == arg_guid) ?? this.target.plug.grids.find(b => b.guid.toLowerCase() == arg_guid);
+      if (!foundBlock && !foundPlug) { return UI_Feedback.Error(`Entity with GUID ${arg_guid} not found.`); } 
 
-      this.target.RemoveBlock(foundBlock);
+      if (foundBlock)
+        this.target.RemoveBlock(foundBlock);
 
-      return UI_Feedback.Success(`Removed block ${arg_guid}.`, foundBlock);
+      if (foundPlug)
+        this.target.RemovePlug(foundPlug);
+
+      return UI_Feedback.Success(`Removed entity ${arg_guid}.`, foundBlock ?? foundPlug);
     }
   );
 
@@ -214,6 +218,16 @@ class UI {
     }
   }
 
+  CreateEditor(block, activate) {
+    let newEditor = new UIEditor[block.constructor.lang()](this, block);
+
+    this.editors.push(newEditor);
+    if (activate ?? true)
+      this.activeEditor = newEditor;
+
+    return newEditor;
+  }
+
   /* ##### Commands ##### */
   $save = new UI_Command(
     'Save a project.',
@@ -236,12 +250,29 @@ class UI {
   );
 
   $create = new UI_Command(
-    'Open a project.',
+    'Create a new block.',
     [
-      { name: 'type', desc: 'Type of new block:\n\tC - C Block\n\tWL - Wiring language\n\tCL - Cycle language' }
+      { name: 'type', desc: 'Type of new block:\n\tC - C Block\n\tWL - Wiring language\n\tCL - Cycle language' },
+      { name: 'name', desc: 'Name of the new block' }
     ],
     (args) => {
+      let arg_type = args.type.toUpperCase();
+      let arg_name = args.name;
 
+      let blockTypes = {
+        C: CBlock,
+        WL: WLBlock,
+        CL: CLBlock
+      };
+
+      let blockClass = blockTypes[arg_type];
+      if (!blockClass) { return UI_Feedback.Error(`Type of new block ${arg_type} not supported at the moment.`); }
+
+      let newBlockInstance = new blockClass(arg_name);
+
+      this.CreateEditor(newBlockInstance, true);
+
+      return UI_Feedback.Success(`${arg_type} Block named ${arg_name} created.`, newBlockInstance);
     }
   );
 
@@ -282,10 +313,7 @@ class UI {
         let foundEditor = this.editors.find(e => e.target == foundBlock);
         if (foundEditor) { return UI_Feedback.Error(`Block ${arg_name} already edited.`); }
 
-        let newEditor = new UIEditor[foundBlock.lang()](this, foundBlock);
-
-        this.editors.push(newEditor);
-        this.activeEditor = newEditor;
+        this.CreateEditor(foundBlock, true);
 
         return UI_Feedback.Success(`Edited block ${arg_name} in editor slot ${this.editors.length - 1}.`, this.activeEditor);
       }
@@ -331,17 +359,6 @@ class UI {
       }
     )
   };
-
-  $switch = new UI_Command(
-    'Switch to an open editor.',
-    [
-      { name: 'type', desc: 'Type of new block:\n\tC - C Block\n\tWL - Wiring language\n\tCL - Cycle language' }
-    ],
-    (args) => {
-
-    }
-  );
-
 
 }
 

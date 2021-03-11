@@ -128,8 +128,8 @@ class WLBlock extends CBlock {
     delete this.plug.plate[pId];
     delete this.plug.grids[pId];
 
-    this.plug.plates = this.plug.plates.filter(p => p != plug);
-    this.plug.grids = this.plug.grids.filter(p => p != plug);
+    this.plug.plates = this.plug.plates.filter(p => p.guid != plug.guid);
+    this.plug.grids = this.plug.grids.filter(p => p.guid != plug.guid);
 
     // Plug is also a Socket
     if (plug instanceof CSocket)
@@ -147,8 +147,10 @@ class WLBlock extends CBlock {
     for (var i of items) {
       if (i instanceof Pin) pins.push(i);
       if (i instanceof WLInternalSocket) {
-        if (!this.plugs.includes(i)) { console.error("Plug not present in block plugs.", i); return null; }
-        pins.push(i.pins[0]);
+        if (i.IsPlatePlug())
+          pins.push(i.pin.grids[0]);
+        else
+          pins.push(i.pin.plates[0]);
       }
     }
 
@@ -352,6 +354,114 @@ class WLBlock extends CBlock {
     
     // Call super generator
     return super.$GenerateSource();
+  }
+
+  $GenerateClass() {
+    let generator = new JSGenerator();
+
+    let genConstructorCode = generator.GenerateFunctionCall('super', [ generator.StringLiteral(this.name) ], false);
+    let genConstructorFunction = generator.GenerateFunction('constructor', null, [], genConstructorCode);
+
+    // Plugs
+    let genPlugsComment = generator.GenerateComment('### PLUGS ###');
+    let genInitPlugs = [];
+    let genAddPlugs = [];
+
+    for (var pg of this.plug.grids) {
+      let pgConfigs = JSON.stringify(pg.configs).replace(/"(\w+)"\s*:/g, '$1:');
+      let genPlugCreatorCode = generator.GenerateConst(
+        pg.guid,
+        '',
+        generator.AccessDirect(
+          pg.constructor.name,
+          generator.GenerateFunctionCall('Create', [ pgConfigs ], false)
+        )
+      );
+      genInitPlugs.push(genPlugCreatorCode);
+      genAddPlugs.push(pg.guid);
+    }
+
+    for (var pp of this.plug.plates) {
+      let ppConfigs = JSON.stringify(pp.configs).replace(/"(\w+)"\s*:/g, '$1:');
+      let genPlugCreatorCode = generator.GenerateConst(
+        pp.guid,
+        '',
+        generator.AccessDirect(
+          pp.constructor.name,
+          generator.GenerateFunctionCall('Create', [ ppConfigs ], false)
+        )
+      );
+      genInitPlugs.push(genPlugCreatorCode);
+      genAddPlugs.push(pp.guid);
+    }
+
+    let genInitPlugsCode = genInitPlugs.join('\n');
+    let genAddPlugsCode = generator.GenerateFunctionCall('this.AddPlug', [ `[${genAddPlugs.join(', ')}]` ]);
+
+    // Blocks
+    let genBlocksComment = generator.GenerateComment('### BLOCKS ###');
+    let genInitBlocks = [];
+    let genAddBlocks = [];
+    for (var b of this.blocks) {
+      let bConfigs = JSON.stringify(b.configs).replace(/"(\w+)"\s*:/g, '$1:');
+      let genBlockCreatorCode = generator.GenerateConst(
+        b.guid,
+        '',
+        generator.AccessDirect(
+          b.constructor.name,
+          generator.GenerateFunctionCall('Create', [ bConfigs ], false)
+        )
+      );
+      genInitBlocks.push(genBlockCreatorCode);
+      genAddBlocks.push(b.guid);
+    }
+
+    let genInitBlocksCode = genInitBlocks.join('\n');
+    let genAddBlocksCode = generator.GenerateFunctionCall('this.AddBlock', [ `[${genAddBlocks.join(', ')}]` ]);
+
+    // Wiring
+    let genWiringComment = generator.GenerateComment('### WIRING ###');
+    let genWires = [];
+    for (var w of this.wires) {
+      let wPins = w.GetConnectedPins();
+
+      let genPins = [];
+      for (var p of wPins) {
+        let genPinAccessCode = generator.AccessDirect(p.block.guid, generator.AccessDirect('pin', p.name));
+        genPins.push(genPinAccessCode);
+      }
+
+      let genWireCreatorCode = generator.GenerateFunctionCall('this.ConnectWire', [ `[${genPins.join(', ')}]` ]);
+      genWires.push(genWireCreatorCode);
+    }
+
+    let genWiresCode = genWires.join('\n');
+
+    // Init function
+    let genInitCode = [
+      genPlugsComment,
+      genInitPlugsCode,
+      genAddPlugsCode,
+
+      genBlocksComment,
+      genInitBlocksCode,
+      genAddBlocksCode,
+
+      genWiringComment,
+      genWiresCode
+    ].join('\n');
+    let genInitFunction = generator.GenerateFunction('$Init', null, [], genInitCode);
+
+    // Class
+    let genClassCode = [
+      genConstructorFunction,
+      genInitFunction
+    ].join('\n');
+
+    let genClassName = this.name.replace(/\W/g, '');
+    let genClass = generator.GenerateClass(`WLBlock_${genClassName}`, 'WLBlock', genClassCode);
+
+    return genClass;
   }
 }
 

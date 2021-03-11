@@ -59,6 +59,11 @@ class Wire {
     else
       this.ReplaceGrid(oldPin, newPin);
   }
+
+  GetConnectedPins() {
+    let ret = this.platePin ? [this.platePin] : [];
+    return ret.concat(this.gridPins);
+  }
 }
 
 
@@ -188,6 +193,8 @@ class Block {
   $Deinit() { console.error("$Deinit NOT IMPLEMENTED."); return null; }
   $GenerateSource() { console.error("$GenerateSource NOT IMPLEMENTED."); return null; }
 
+  $GenerateClass() { console.error("$GenerateClass NOT IMPLEMENTED."); return null; }
+
   static $DefaultConfigs() { return {}; }
   static $DefaultSettings() { return {}; }
 
@@ -208,12 +215,15 @@ class Generator {
   GenerateComment(content) { console.error("GenerateComment NOT IMPLEMENTED."); return null; }
   GenerateFunctionCall(name, args) { console.error("GenerateFunctionCall NOT IMPLEMENTED."); return null; }
   GenerateAssignment(source, destination) { console.error("GenerateAssignment NOT IMPLEMENTED."); return null; }
+  GenerateClass(name, inherit, code) { console.error("GenerateClass NOT IMPLEMENTED."); return null; }
 
   VariableDefinition(name, type) { console.error("VariableDefinition NOT IMPLEMENTED."); return null; }
   AccessIndirect(parent, children) { console.error("AccessIndirect NOT IMPLEMENTED."); return null; }
   AccessDirect(parent, children) { console.error("AccessDirect NOT IMPLEMENTED."); return null; }
   GetReference(element) { console.error("GetReference NOT IMPLEMENTED."); return null; }
   AccessReference(element) { console.error("AccessReference NOT IMPLEMENTED."); return null; }
+
+  StringLiteral(str) { console.error("StringLiteral NOT IMPLEMENTED."); return null; }
 }
 
 class Board {

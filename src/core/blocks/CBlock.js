@@ -63,8 +63,8 @@ class CBlock extends Block {
     delete this.pin.plate[pName];
     delete this.pin.grids[pName];
 
-    this.pin.plates = this.pin.plates.filter(p => p != pin);
-    this.pin.grids = this.pin.grids.filter(p => p != pin);
+    this.pin.plates = this.pin.plates.filter(p => p.name != pName);
+    this.pin.grids = this.pin.grids.filter(p => p.name != pName);
   }
 
   $GenerateSource() {
@@ -179,13 +179,13 @@ class CBlock extends Block {
   IsGridPlug() {
     let hasPlates = this.pin.plates.length > 0;
     let hasGrids = this.pin.grids.length > 0;
-    return (!hasPlates && hasGrids);
+    return (hasPlates && !hasGrids);
   }
 
   IsPlatePlug() {
     let hasPlates = this.pin.plates.length > 0;
     let hasGrids = this.pin.grids.length > 0;
-    return (hasPlates && !hasGrids);
+    return (!hasPlates && hasGrids);
   }
 
   IsValidPlug() {

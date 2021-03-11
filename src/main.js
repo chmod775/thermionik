@@ -279,12 +279,17 @@ ui.SetToolbox({
     ArduinoUno_Board
   ],
   tubes: [
+    PlateSocket,
+    GridSocket,
+
     Block_Not,
     Block_And,
     Block_OneShot,
     Block_Counter,
 
-    Arduino_DigitalInput_Plug
+    Arduino_DigitalInput_Plug,
+    Arduino_DigitalOutput_Plug,
+    Arduino_OLEDNumber_Plug
   ]
 });
 

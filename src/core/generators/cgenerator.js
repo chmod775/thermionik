@@ -31,7 +31,6 @@ class CGenerator extends Generator {
     var codeLines = code.split('\n');
     for (var lIdx in codeLines)
       codeLines[lIdx] = '\t' + codeLines[lIdx];
-
     genLines.push( codeLines.join('\n') );
 
     genLines.push( `}` );
@@ -77,4 +76,9 @@ class CGenerator extends Generator {
   AccessReference(element) {
     return `*${element}`;
   }
+
+  StringLiteral(str) {
+    return `"${str}"`;
+  }
+
 }
