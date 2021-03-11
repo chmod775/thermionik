@@ -1,18 +1,18 @@
-class WLInternalPlug extends CBlock.Socket {
+class WLInternalSocket extends CBlock.Socket {
   constructor(name, isPlate) {
     super(name, isPlate);
   }
 }
 
-class PlugPlate extends WLInternalPlug {
+class PlateSocket extends WLInternalSocket {
   constructor() {
-    super("PlugPlate", true);
+    super("PlateSocket", true);
   }
 
   $Init() {
-    this.SetPins(
+    this.AddPin(
       [
-        PinGrid.Create('ToPlate', this.configs.type, this.configs.init),
+        GridPin.Create('ToPlate', this.configs.type, this.configs.init),
       ]
     );
   }
@@ -25,18 +25,18 @@ class PlugPlate extends WLInternalPlug {
     }
   }
 
-  ExternalPins() { return [ PinPlate.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
+  $ExternalPins() { return [ PlatePin.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
 }
 
-class PlugGrid extends WLInternalPlug {
+class GridSocket extends WLInternalSocket {
   constructor() {
-    super("PlugGrid", false);
+    super("GridSocket", false);
   }
 
   $Init() {
-    this.SetPins(
+    this.AddPin(
       [
-        PinPlate.Create('FromGrid', this.configs.type, this.configs.init)
+        PlatePin.Create('FromGrid', this.configs.type, this.configs.init)
       ]
     );
   }
@@ -49,7 +49,7 @@ class PlugGrid extends WLInternalPlug {
     }
   }
 
-  ExternalPins() { return [ PinGrid.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
+  $ExternalPins() { return [ GridPin.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
 }
 
 class WLBlock extends CBlock {
@@ -58,7 +58,6 @@ class WLBlock extends CBlock {
   constructor(name) {
     super(name);
   
-    this.plugs = [];
     this.plug = { plate: {}, plates: [], grid: {}, grids: [] };
 
     this.blocks = [];
@@ -68,40 +67,76 @@ class WLBlock extends CBlock {
   }
 
   AddBlock(block) {
-    if (Array.isArray(block))
-      this.blocks = this.blocks.concat(block);
-    else
-      this.blocks.push(block);
+    if (Array.isArray(block)) {
+      for (var b of block)
+        this.AddBlock(b);
+      return;
+    }
+
+    this.blocks.push(block);
   }
 
   RemoveBlock(block) {
-    this.blocks = this.blocks.filter(t => !t.IsEqual(block));
+    if (Array.isArray(block)) {
+      for (var b of block)
+        this.RemoveBlock(b);
+      return;
+    }
+
     block.Destroy();
+
+    this.blocks = this.blocks.filter(t => !t.IsEqual(block));
     this.CleanEmptyWires();
   }
 
-  SetPlugs(plugs) {
-    this.plugs = plugs;
-    this.plug = { plate: {}, plates: [], grid: {}, grids: [] };
-
-    let pins = [];
-    for (var p of this.plugs) {
-      if (p instanceof CSocket)
-        pins = pins.concat(p.ExternalPins());
-
-      this.plug[p.configs.id] = p;
-      if (p.plugConfigs.isPlate) {
-        this.plug.plate[p.configs.id] = p;
-        this.plug.plates.push(p);
-      } else {
-        this.plug.grid[p.configs.id] = p;
-        this.plug.grids.push(p);
-      }
+  /* ### Plugs management ### */
+  AddPlug(plug) {
+    if (Array.isArray(plug)) {
+      for (var p of plug)
+        this.AddPlug(p);
+      return;
     }
 
-    this.SetPins(pins);
+    if (!plug.IsValidPlug()) { console.error("Block is not a valid Plug.", plug); return null; }
+
+    let pId = plug.configs.id ?? plug.guid;
+
+    this.plug[pId] = plug;
+    if (plug.IsPlatePlug()) {
+      this.plug.plate[pId] = plug;
+      this.plug.plates.push(plug);
+    } else {
+      this.plug.grid[pId] = plug;
+      this.plug.grids.push(plug);
+    }
+
+    // Plug is also a Socket
+    if (plug instanceof CSocket)
+      this.AddPin(plug.$ExternalPins());
   }
 
+  RemovePlug(plug) {
+    if (Array.isArray(plug)) {
+      for (var p of plug)
+        this.RemovePlug(p);
+      return;
+    }
+
+    let pId = plug.configs.id ?? plug.guid;
+
+    delete this.plug[pId];
+    delete this.plug.plate[pId];
+    delete this.plug.grids[pId];
+
+    this.plug.plates = this.plug.plates.filter(p => p != plug);
+    this.plug.grids = this.plug.grids.filter(p => p != plug);
+
+    // Plug is also a Socket
+    if (plug instanceof CSocket)
+      this.RemovePin(plug.$ExternalPins());
+  }
+
+  /* ### Wirings ### */
   CleanEmptyWires() {
     this.wires = this.wires.filter(w => (w.platePin != null) || (w.gridPins.length > 0));
   }
@@ -111,19 +146,30 @@ class WLBlock extends CBlock {
     let pins = [];
     for (var i of items) {
       if (i instanceof Pin) pins.push(i);
-      if (i instanceof WLInternalPlug) {
+      if (i instanceof WLInternalSocket) {
         if (!this.plugs.includes(i)) { console.error("Plug not present in block plugs.", i); return null; }
         pins.push(i.pins[0]);
       }
     }
 
-    // Search plate in pins
-    var foundPlates = pins.filter(p => p.isPlate);
+    // Search plate and grids in pins
+    let foundPlates = [];
+    let foundGrids = [];
+
+    for (var p of pins) {
+      if (!this.blocks.includes(p.block))
+        if (!this.plug.plates.includes(p.block))
+          if (!this.plug.grids.includes(p.block))
+            { console.error("Pin block's is not present in blocks list.", p.block, p); return null; }
+
+      if (p.isPlate)
+        foundPlates.push(p);
+      else
+        foundGrids.push(p);
+    }
+
     if (foundPlates.length > 1) { console.error("Multiple Plates found."); return null; }
     let foundPlate = foundPlates[0] ?? null;
-
-    // Search grids in pins
-    var foundGrids = pins.filter(p => !p.isPlate);
 
     // Get already connected wire (if present)
     var destWire = null;
@@ -160,14 +206,6 @@ class WLBlock extends CBlock {
     if (!this.wires.includes(destWire))
       this.wires.push(destWire);
 
-    // Automagically add blocks from pins
-    for (var p of pins) {
-      let pBlock = p.block;
-      if (!pBlock.IsPlug())
-        if (!this.blocks.includes(pBlock))
-          this.AddBlock(pBlock);
-    }
-
     // Return wire
     return destWire;
   }
@@ -183,8 +221,8 @@ class WLBlock extends CBlock {
     this.Data = [];
 
     // Create block sequence (GridPlugs - Blocks - PlatePlugs)
-    let gridPlugs = this.plug.grids.filter(p => !(p instanceof WLInternalPlug));
-    let platePlugs = this.plug.plates.filter(p => !(p instanceof WLInternalPlug));
+    let gridPlugs = this.plug.grids.filter(p => !(p instanceof WLInternalSocket));
+    let platePlugs = this.plug.plates.filter(p => !(p instanceof WLInternalSocket));
 
     let sequence = gridPlugs.concat(this.blocks.concat(platePlugs));
 
@@ -230,7 +268,7 @@ class WLBlock extends CBlock {
         let plateConnected = pi.wire ? pi.wire.platePin : null;
         
         if (plateConnected) {
-          if (plateConnected.block instanceof PlugGrid) {
+          if (plateConnected.block instanceof GridSocket) {
             genLoopCallArgs.push(plateConnected.block.configs.id);
           } else {
             let plateConnected_bId = plateConnected.block.guid;
@@ -272,7 +310,7 @@ class WLBlock extends CBlock {
     }
 
     // Generate plate plugs marshalling
-    let internalPlates = this.plug.plates.filter(p => p instanceof PlugPlate);
+    let internalPlates = this.plug.plates.filter(p => p instanceof PlateSocket);
     for (var po of internalPlates) {
       let toPlatePin = po.pin.ToPlate;
       let pinWire = toPlatePin.wire;
@@ -282,7 +320,7 @@ class WLBlock extends CBlock {
       if (pinWire != null) {
         let srcPlate = pinWire.platePin;
         
-        if (srcPlate.block instanceof PlugGrid) {
+        if (srcPlate.block instanceof GridSocket) {
           source = srcPlate.block.configs.id;
         } else {
           source = mainGenerator.AccessDirect(
@@ -316,24 +354,6 @@ class WLBlock extends CBlock {
     return super.$GenerateSource();
   }
 }
-
-/* ##### Plugs ##### */
-class WLPlug_Plate extends WLBlock {
-  constructor(name) {
-    super(name);
-    this.plugConfigs = { isPlate: true };
-  }
-}
-
-class WLPlug_Grid extends WLBlock {
-  constructor(name) {
-    super(name);
-    this.plugConfigs = { isPlate: false };
-  }
-}
-
-WLBlock.PlatePlug = WLPlug_Plate;
-WLBlock.GridPlug = WLPlug_Grid;
 
 /* ##### CL Step ##### */
 

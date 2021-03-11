@@ -13,28 +13,53 @@ class UIEditor_CBlock extends UIEditor {
 UIEditor.CBlock = UIEditor_CBlock;
 
 class UIEditor_WLBlock extends UIEditor {
-  $add = new UI_Command(
-    'Add a block.',
-    [
-      { name: 'name', desc: 'Name of the block to add.' },
-      { name: 'pos', desc: 'Final position of the added block (ex. C3).' },
-      { name: 'configs', desc: '[OPTIONAL] configs of the block.' }
-    ],
-    (args) => {
-      let arg_name = args.name.toUpperCase();
-      let arg_pos = args.pos;
-      let arg_configs = eval(`(${args.configs})`) ?? {}; // TO BE FIXED AND SANITIZED
+  $add = {
+    block: new UI_Command(
+      'Add a block.',
+      [
+        { name: 'name', desc: 'Name of the block to add.' },
+        { name: 'pos', desc: 'Final position of the added block (ex. C3).' },
+        { name: 'configs', desc: '[OPTIONAL] configs of the block.' }
+      ],
+      (args) => {
+        let arg_name = args.name.toUpperCase();
+        let arg_pos = args.pos;
+        let arg_configs = eval(`(${args.configs})`) ?? {}; // TO BE FIXED AND SANITIZED
 
-      let foundBlock = this.ui.toolbox.tubes.find(b => b.name.toUpperCase() == arg_name);
-      if (!foundBlock) { return UI_Feedback.Error(`Block ${arg_name} does not exists.`); } 
+        let foundBlock = this.ui.toolbox.tubes.find(b => b.name.toUpperCase() == arg_name);
+        if (!foundBlock) { return UI_Feedback.Error(`Block ${arg_name} does not exists.`); } 
 
-      let newBlockInstance = foundBlock.Create(arg_configs);
+        let newBlockInstance = foundBlock.Create(arg_configs);
 
-      this.target.AddBlock(newBlockInstance);
+        this.target.AddBlock(newBlockInstance);
 
-      return UI_Feedback.Success(`Added block ${arg_name}.`, newBlockInstance);
-    }
-  );
+        return UI_Feedback.Success(`Added block ${arg_name}.`, newBlockInstance);
+      }
+    ),
+
+    plug: new UI_Command(
+      'Add a plug',
+      [
+        { name: 'name', desc: 'Name of the block to add.' },
+        { name: 'row', desc: 'Final row of the added block (ex. 2).' },
+        { name: 'configs', desc: '[OPTIONAL] configs of the block.' }
+      ],
+      (args) => {
+        let arg_name = args.name.toUpperCase();
+        let arg_row = args.row;
+        let arg_configs = eval(`(${args.configs})`) ?? {}; // TO BE FIXED AND SANITIZED
+
+        let foundPlug = this.ui.toolbox.tubes.find(b => b.name.toUpperCase() == arg_name);
+        if (!foundPlug) { return UI_Feedback.Error(`Plug ${arg_name} does not exists.`); } 
+
+        let newPlugInstance = foundPlug.Create(arg_configs);
+
+        this.target.AddPlug(newPlugInstance);
+
+        return UI_Feedback.Success(`Added plug ${arg_name}.`, newPlugInstance);
+      }
+    )
+  };
 
   $remove = new UI_Command(
     'Remove block.',

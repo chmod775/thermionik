@@ -7,47 +7,64 @@ class CBlockCode {
 
 class CBlock extends Block {
   static lang() { return 'CBlock' };
+  $Prefix() { return 'b' };
 
   constructor(name) {
     super(name);
 
     this.requirements = [];
 
-    this.pins = [];
     this.pin = { plate: {}, plates: [], grid: {}, grids: [] };
   }
 
   $Deinit() {
-    for (var p of this.pins) {
+    for (var p of this.pin.plates) {
+      if (p.wire)
+        p.wire.DisconnectPin(p);
+    }
+    for (var p of this.pin.grids) {
       if (p.wire)
         p.wire.DisconnectPin(p);
     }
   }
 
-  SetPins(pins) {
-    if (this.plugConfigs) {
-      let platePins = Pin.FilterPlatePins(pins);
-      let gridPins = Pin.FilterGridPins(pins);
-  
-      if (this.plugConfigs.isPlate && (platePins.length > 0)) { console.error(this, "Plate plug can contain ONLY grid pins."); return null; }
-      if (!this.plugConfigs.isPlate && (gridPins.length > 0)) { console.error(this, "Grid plug can contain ONLY plate pins."); return null; }
+  AddPin(pin) {
+    if (Array.isArray(pin)) {
+      for (var p of pin)
+        this.AddPin(p);
+      return;
     }
 
-    this.pins = pins;
+    pin.SetBlock(this);
 
-    this.pin = { plate: {}, plates: [], grid: {}, grids: [] };
+    let pName = pin.name;
 
-    for (var p of this.pins) {
-      p.SetBlock(this);
-      this.pin[p.name] = p;
-      if (p.isPlate) {
-        this.pin.plate[p.name] = p;
-        this.pin.plates.push(p);
-      } else {
-        this.pin.grid[p.name] = p;
-        this.pin.grids.push(p);
-      }
+    this.pin[pName] = pin;
+    if (pin.isPlate) {
+      this.pin.plate[pName] = pin;
+      this.pin.plates.push(pin);
+    } else {
+      this.pin.grid[pName] = pin;
+      this.pin.grids.push(pin);
     }
+  }
+
+  RemovePin(pin) {
+    if (Array.isArray(pin)) {
+      for (var p of pin)
+        this.RemovePin(p);
+      return;
+    }
+
+    pin.SetBlock(null);
+
+    let pName = pin.name;
+    delete this.pin[pName];
+    delete this.pin.plate[pName];
+    delete this.pin.grids[pName];
+
+    this.pin.plates = this.pin.plates.filter(p => p != pin);
+    this.pin.grids = this.pin.grids.filter(p => p != pin);
   }
 
   $GenerateSource() {
@@ -158,6 +175,23 @@ class CBlock extends Block {
     }
   }
 
+  /* ### Utilities ### */
+  IsGridPlug() {
+    let hasPlates = this.pin.plates.length > 0;
+    let hasGrids = this.pin.grids.length > 0;
+    return (!hasPlates && hasGrids);
+  }
+
+  IsPlatePlug() {
+    let hasPlates = this.pin.plates.length > 0;
+    let hasGrids = this.pin.grids.length > 0;
+    return (hasPlates && !hasGrids);
+  }
+
+  IsValidPlug() {
+    return this.IsGridPlug() || this.IsPlatePlug();
+  }
+
   /* ### Requirements ### */
   InitCode() {
     console.error("InitCode NOT IMPLEMENTED."); return TODO;
@@ -167,31 +201,14 @@ class CBlock extends Block {
   Data() { return []; }
 }
 
-class CPlug_Plate extends CBlock {
-  constructor(name) {
-    super(name);
-    this.plugConfigs = { isPlate: true };
-  }
-}
-
-class CPlug_Grid extends CBlock {
-  constructor(name) {
-    super(name);
-    this.plugConfigs = { isPlate: false };
-  }
-}
-
 class CSocket extends CBlock {
-  constructor(name, isPlate) {
+  constructor(name) {
     super(name);
-    this.plugConfigs = { isPlate: isPlate };
   }
 
-  ExternalPins() { console.error("ExternalPins NOT IMPLEMENTED."); return null; }
+  $ExternalPins() { console.error("$ExternalPins NOT IMPLEMENTED."); return null; }
 }
 
-CBlock.PlatePlug = CPlug_Plate;
-CBlock.GridPlug = CPlug_Grid;
 CBlock.Socket = CSocket;
 
 CBlock.Step = null;

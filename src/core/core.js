@@ -101,14 +101,14 @@ class Pin {
   }
 }
 
-class PinPlate extends Pin {
+class PlatePin extends Pin {
   static Create(name, type, init, configs) {
     let ret = new Pin(null, name, type, init, configs);
     ret.isPlate = true;
     return ret;
   }
 }
-class PinGrid extends Pin {
+class GridPin extends Pin {
   static Create(name, type, init, configs) {
     let ret = new Pin(null, name, type, init, configs);
     ret.isPlate = false;
@@ -130,12 +130,11 @@ class BlockCode {
 class Block {
   constructor(name) {
     this.name = name;
-    this.guid = Helpers.uuidv4();
+    this.guid = `${this.$Prefix()}_${Helpers.uuidv4()}`;
 
     this.configs = {}; // Impact only on code generation, so JS level
     this.settings = {}; // Will be in final code
 
-    this.plugConfigs = null; // BLOCK: null, PLUG: { isPlate: false }
     this.guiConfigs = {};
   }
 
@@ -166,10 +165,6 @@ class Block {
   }
 
   /* ### Utilities ### */
-  IsPlug() { return this.plugConfigs != null; }
-  IsPlatePlug() { return this.plugConfigs.isPlate; }
-
-
   IsEqual(block) {
     return (this == block);
   }
@@ -195,6 +190,8 @@ class Block {
 
   static $DefaultConfigs() { return {}; }
   static $DefaultSettings() { return {}; }
+
+  $Prefix() { return '?' };
 }
 
 class Compiler {

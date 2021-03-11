@@ -113,53 +113,53 @@ class CLSequence_Conditional extends CLSequence {
 }
 
 /* ##### Plugs ##### */
-class CLInternalPlug extends CBlock.Socket {
+class CLInternalSocket extends CBlock.Socket {
   constructor(name, isPlate) {
     super(name, isPlate);
   }
 }
 
-class StepDefaultPlate extends CLInternalPlug {
+class StepDefaultPlate extends CLInternalSocket {
   constructor() {
     super("StepDefaultPlate", true);
   }
 
   Init() {
-    this.SetPins(
+    this.AddPin(
       [
       ]
     );
   }
 
-  ExternalPins() { return [ PinPlate.Create('Active', 'bool', 'false') ]; }
+  $ExternalPins() { return [ PlatePin.Create('Active', 'bool', 'false') ]; }
 }
-class StepDefaultGrid extends CLInternalPlug {
+class StepDefaultGrid extends CLInternalSocket {
   constructor() {
     super("StepDefaultGrid", false);
   }
 
   Init() {
-    this.SetPins(
+    this.AddPin(
       [
-        PinPlate.Create('Active', 'bool', 'false'),
-        PinPlate.Create('EntryShot', 'bool', 'false'),
-        PinPlate.Create('ExitShot', 'bool', 'false')
+        PlatePin.Create('Active', 'bool', 'false'),
+        PlatePin.Create('EntryShot', 'bool', 'false'),
+        PlatePin.Create('ExitShot', 'bool', 'false')
       ]
     );
   }
 
-  ExternalPins() { return []; }
+  $ExternalPins() { return []; }
 }
 
-class StepPlate extends CLInternalPlug {
+class StepPlate extends CLInternalSocket {
   constructor() {
     super("StepPlate", true);
   }
 
   Init() {
-    this.SetPins(
+    this.AddPin(
       [
-        PinGrid.Create('ToPlate', this.configs.type, this.configs.init),
+        GridPin.Create('ToPlate', this.configs.type, this.configs.init),
       ]
     );
   }
@@ -172,17 +172,17 @@ class StepPlate extends CLInternalPlug {
     }
   }
 
-  ExternalPins() { return [ PinPlate.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
+  $ExternalPins() { return [ PlatePin.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
 }
-class StepGrip extends CLInternalPlug {
+class StepGrip extends CLInternalSocket {
   constructor() {
     super("StepGrip", false);
   }
 
   Init() {
-    this.SetPins(
+    this.AddPin(
       [
-        PinPlate.Create('FromGrid', this.configs.type, this.configs.init)
+        PlatePin.Create('FromGrid', this.configs.type, this.configs.init)
       ]
     );
   }
@@ -195,7 +195,7 @@ class StepGrip extends CLInternalPlug {
     }
   }
 
-  ExternalPins() { return [ PinGrid.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
+  $ExternalPins() { return [ GridPin.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
 }
 
 class CLStep {
@@ -227,7 +227,7 @@ class CLStep {
     let p_defGrid = StepDefaultGrid.Create();
     let p_defPlate = StepDefaultPlate.Create();
 
-    this.block.SetPlugs(
+    this.block.AddPlug(
       [
         p_defGrid,
         p_defPlate

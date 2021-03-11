@@ -30,7 +30,7 @@ class Helpers {
 
   static uuidv4() {
     uuidCnt++;
-    return 'b_' + uuidCnt;
+    return uuidCnt;
   }
 
   static hashString(str) {

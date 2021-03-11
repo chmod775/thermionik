@@ -6,10 +6,10 @@ class Block_OneShot extends CBlock {
   }
 
   $Init() {
-    this.SetPins(
+    this.AddPin(
       [
-        PinGrid.Create('in', 'bool', 'true'),
-        PinPlate.Create('out', 'bool', 'false')
+        GridPin.Create('in', 'bool', 'true'),
+        PlatePin.Create('out', 'bool', 'false')
       ]
     );
 
@@ -38,13 +38,13 @@ class Block_Counter extends CBlock {
   $Init() {
     this.author = "Michele Trombetta";
 
-    this.SetPins(
+    this.AddPin(
       [
-        PinGrid.Create('inc', 'bool', 'false'),
-        PinGrid.Create('reset', 'bool', 'false'),
+        GridPin.Create('inc', 'bool', 'false'),
+        GridPin.Create('reset', 'bool', 'false'),
 
-        PinPlate.Create('actValue', 'int', '0'),
-        PinPlate.Create('atTarget', 'bool', 'false')
+        PlatePin.Create('actValue', 'int', '0'),
+        PlatePin.Create('atTarget', 'bool', 'false')
       ]
     );
 
@@ -81,10 +81,10 @@ class Block_Not extends CBlock {
   }
 
   $Init() {
-    this.SetPins(
+    this.AddPin(
       [
-        PinGrid.Create('in', 'bool', 'false'),
-        PinPlate.Create('out', 'bool', 'false')
+        GridPin.Create('in', 'bool', 'false'),
+        PlatePin.Create('out', 'bool', 'false')
       ]
     );
 
@@ -108,11 +108,11 @@ class Block_And extends CBlock {
   $Init() {
     let nGrids = Math.max(+this.configs.size, 2);
 
-    let plugs = [PinPlate.Create('out', 'bool', 'false')];
+    let pins = [PlatePin.Create('out', 'bool', 'false')];
     for (var gIdx = 0; gIdx < nGrids; gIdx++)
-      plugs.push(PinGrid.Create(`in_${gIdx}`, 'bool', 'false'));
+      pins.push(GridPin.Create(`in_${gIdx}`, 'bool', 'false'));
 
-    this.SetPins(plugs);
+    this.AddPin(pins);
   }
 
   InitCode() {}
@@ -135,10 +135,9 @@ class Block_WL extends WLBlock {
   }
 
   $Init() {
-    // Plugs
-    let p_in = PlugGrid.Create({ id: 'in', type: 'bool', init: 'false'});
-    let p_out = PlugPlate.Create({ id: 'out', type: 'bool', init: 'false'});
-    this.SetPlugs([ p_in, p_out ]);
+    let p_in = GridSocket.Create({ id: 'in', type: 'bool', init: 'false'});
+    let p_out = PlateSocket.Create({ id: 'out', type: 'bool', init: 'false'});
+    this.AddPlug([ p_in, p_out ]);
 
     // Wiring
     this.ConnectWire([
@@ -161,10 +160,12 @@ class Main extends WLBlock {
     let p_do_13 = Arduino_DigitalOutput_Plug.Create({ pin: 3 });
     let p_do_oled = Arduino_OLEDNumber_Plug.Create({ n_values: 3 });
 
-    this.SetPlugs([ p_di_2, p_do_13, p_do_oled ]);
+    this.AddPlug([ p_di_2, p_do_13, p_do_oled ]);
 
     // Blocks
     let b7 = Block_Not.Create();
+
+    this.AddBlock(b7);
 
     // Wiring
     this.ConnectWire([
@@ -198,10 +199,10 @@ class Dispenser extends CLBlock {
   }
 
   $Init() {
-    let p_Work_A = PlugPlate.Create({ id: 'Work_A', type: 'bool', init: 'false'});
-    let p_Rest_A = PlugPlate.Create({ id: 'Rest_A', type: 'bool', init: 'false'});
+    let p_Work_A = PlateSocket.Create({ id: 'Work_A', type: 'bool', init: 'false'});
+    let p_Rest_A = PlateSocket.Create({ id: 'Rest_A', type: 'bool', init: 'false'});
 
-    this.SetPlugs([ p_Work_A, p_Rest_A ]);
+    this.AddPlug([ p_Work_A, p_Rest_A ]);
 
     let s001 = CLStep.CreateDefault('Init');
     let s002 = CLStep.CreateDefault('WaitStart');
@@ -269,7 +270,7 @@ let renderJS = SVG().addTo('#render').size('100%', '100%');
 
 renderJS.clear();
 
-let workspace = new WLBlock.Workspace(renderJS, mainBlock);
+//let workspace = new WLBlock.Workspace(renderJS, mainBlock);
 
 let ui = new UI();
 
@@ -281,13 +282,15 @@ ui.SetToolbox({
     Block_Not,
     Block_And,
     Block_OneShot,
-    Block_Counter
+    Block_Counter,
+
+    Arduino_DigitalInput_Plug
   ]
 });
 
 ui.Execute("BOARD ArduinoUno_Board");
-ui.Execute("ADD Block_And C3 {size:10}");
-ui.Execute("ADD Block_Not");
+ui.Execute("ADD BLOCK Block_And C3 {size:10}");
+ui.Execute("ADD BLOCK Block_Not");
 ui.Execute('connect b_8.out b_7.in_2');
 ui.Execute('connect b_8.out b_7.in_2 b_7.in_4')
 
