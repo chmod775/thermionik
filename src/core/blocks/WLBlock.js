@@ -56,7 +56,7 @@ class WLBlock extends CBlock {
   static lang() { return 'WLBlock' };
 
   constructor(name) {
-    super(name);
+    super(name, true);
   
     this.plug = { plate: {}, plates: [], grid: {}, grids: [] };
 

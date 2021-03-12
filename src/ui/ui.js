@@ -6,7 +6,49 @@ class UIEditor {
 }
 
 class UIEditor_CBlock extends UIEditor {
+  $pin = {
+    add: new UI_Command(
+      'Add a new pin.',
+      [
+        { name: 'direction', desc: 'Direction of the pin. I- Input, O- Output' },
+        { name: 'name', desc: 'Name of the pin.' },
+        { name: 'type', desc: 'Type of the pin.' },
+        { name: 'init', desc: 'Init value of the pin.' }
+      ],
+      (args) => {
+        let arg_direction = args.direction.toUpperCase();
+        let arg_name = args.name.toLowerCase();
+        let arg_type = args.type.toLowerCase();
+        let arg_init = args.init;
 
+        let pinDirectionPlate = (arg_direction[0] == 'O');
+
+        let pinClass = pinDirectionPlate ? PlatePin : GridPin;
+        let newPinInstance = pinClass.Create(arg_name, arg_type, arg_init);
+
+        this.target.AddPin(newPinInstance);
+
+        return UI_Feedback.Success(`Added pin ${arg_name}.`, newPinInstance);
+      }
+    ),
+
+    remove: new UI_Command(
+      'Remove existing pin by name.',
+      [
+        { name: 'name', desc: 'Name of the pin to remove.' }
+      ],
+      (args) => {
+        let arg_name = args.name.toLowerCase();
+
+        let foundPin = this.target.pin.plates.find(b => b.name.toLowerCase() == arg_name) ?? this.target.pin.grids.find(b => b.name.toLowerCase() == arg_name);
+        if (!foundPin) { return UI_Feedback.Error(`Pin with name ${arg_name} not found.`); } 
+
+        this.target.RemovePin(foundPin);
+
+        return UI_Feedback.Success(`Removed pin ${arg_name}.`, foundPin);
+      }
+    )
+  }
 
 }
 UIEditor.CBlock = UIEditor_CBlock;

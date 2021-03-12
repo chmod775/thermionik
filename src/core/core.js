@@ -108,14 +108,14 @@ class Pin {
 
 class PlatePin extends Pin {
   static Create(name, type, init, configs) {
-    let ret = new Pin(null, name, type, init, configs);
+    let ret = new PlatePin(null, name, type, init, configs);
     ret.isPlate = true;
     return ret;
   }
 }
 class GridPin extends Pin {
   static Create(name, type, init, configs) {
-    let ret = new Pin(null, name, type, init, configs);
+    let ret = new GridPin(null, name, type, init, configs);
     ret.isPlate = false;
     return ret;
   }
@@ -210,12 +210,14 @@ class Generator {
 
   GenerateStructure(name, elements) { console.error("GenerateStructure NOT IMPLEMENTED."); return null; }
   GenerateFunction(name, ret, parameters, code) { console.error("GenerateFunction NOT IMPLEMENTED."); return null; }
+  GenerateFunctionReturn(value) { console.error("GenerateFunctionReturn NOT IMPLEMENTED."); return null; }
   GenerateArray(name, type, size) { console.error("GenerateArray NOT IMPLEMENTED."); return null; }
   GenerateConst(name, type, value) { console.error("GenerateConst NOT IMPLEMENTED."); return null; }
   GenerateComment(content) { console.error("GenerateComment NOT IMPLEMENTED."); return null; }
   GenerateFunctionCall(name, args) { console.error("GenerateFunctionCall NOT IMPLEMENTED."); return null; }
   GenerateAssignment(source, destination) { console.error("GenerateAssignment NOT IMPLEMENTED."); return null; }
   GenerateClass(name, inherit, code) { console.error("GenerateClass NOT IMPLEMENTED."); return null; }
+
 
   VariableDefinition(name, type, init) { console.error("VariableDefinition NOT IMPLEMENTED."); return null; }
   AccessIndirect(parent, children) { console.error("AccessIndirect NOT IMPLEMENTED."); return null; }

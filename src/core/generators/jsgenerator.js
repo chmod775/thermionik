@@ -45,6 +45,10 @@ class JSGenerator extends Generator {
     return genLines.join('\n');
   }
 
+  GenerateFunctionReturn(value) {
+    return `return ${value};`;
+  }
+
   GenerateFunctionCall(name, args, pretty) {
     if (pretty)
       return `${name}(\n\t${args.join(',\n\t')}\n);`;

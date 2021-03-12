@@ -18,13 +18,13 @@ class ArduinoUno_Board extends Board {
     let sources = Object.values(this.mainBlock.dependencies).concat([mainBlockSource]);
 
     let sourceLines = [
-      mainGenerator.GenerateComment('    ______  __ __    ___  ____   ___ ___  ____  ___   ____   ____  __  _    '),
-      mainGenerator.GenerateComment('   |      ||  |  |  /  _]|    \\ |   |   ||    |/   \\ |    \\ |    ||  |/ ]   '),
-      mainGenerator.GenerateComment('   |      ||  |  | /  [_ |  D  )| _   _ | |  ||     ||  _  | |  | |  \' /    '),
-      mainGenerator.GenerateComment('   |_|  |_||  _  ||    _]|    / |  \\_/  | |  ||  O  ||  |  | |  | |    \\    '),
-      mainGenerator.GenerateComment('     |  |  |  |  ||   [_ |    \\ |   |   | |  ||     ||  |  | |  | |     |   '),
-      mainGenerator.GenerateComment('     |  |  |  |  ||     ||  .  \\|   |   | |  ||     ||  |  | |  | |  .  |   '),
-      mainGenerator.GenerateComment('     |__|  |__|__||_____||__|\\_||___|___||____|\\___/ |__|__||____||__|\\_|   '),
+      mainGenerator.GenerateComment('    ______  __ __    ___  ____   ___ ___  ____   ___   ____   ____  __  _    '),
+      mainGenerator.GenerateComment('   |      ||  |  |  /  _]|    \\ |   |   ||    | /   \\ |    \\ |    ||  |/ ]   '),
+      mainGenerator.GenerateComment('   |      ||  |  | /  [_ |  D  )| _   _ | |  | |     ||  _  | |  | |  \' /    '),
+      mainGenerator.GenerateComment('   |_|  |_||  _  ||    _]|    / |  \\_/  | |  | |  O  ||  |  | |  | |    \\    '),
+      mainGenerator.GenerateComment('     |  |  |  |  ||   [_ |    \\ |   |   | |  | |     ||  |  | |  | |     |   '),
+      mainGenerator.GenerateComment('     |  |  |  |  ||     ||  .  \\|   |   | |  | |     ||  |  | |  | |  .  |   '),
+      mainGenerator.GenerateComment('     |__|  |__|__||_____||__|\\_||___|___||____| \\___/ |__|__||____||__|\\_|   '),
       '',
     ];
 
@@ -116,7 +116,7 @@ class ArduinoUno_Board extends Board {
 
 class Arduino_DigitalInput_Plug extends CBlock {
   constructor() {
-    super("Arduino_DigitalInput_Plug");
+    super("Arduino_DigitalInput_Plug", false);
   }
 
   $Init() {
@@ -144,7 +144,7 @@ class Arduino_DigitalInput_Plug extends CBlock {
 
 class Arduino_DigitalOutput_Plug extends CBlock {
   constructor() {
-    super("Arduino_DigitalOutput_Plug");
+    super("Arduino_DigitalOutput_Plug", false);
   }
 
   $Init() {
@@ -172,7 +172,7 @@ class Arduino_DigitalOutput_Plug extends CBlock {
 
 class Arduino_OLEDNumber_Plug extends CBlock {
   constructor() {
-    super("Arduino_OLED_Plug");
+    super("Arduino_OLED_Plug", true);
   }
 
   $Init() {

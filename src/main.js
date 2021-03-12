@@ -2,7 +2,7 @@ let mainGenerator = new CGenerator();
 
 class Block_OneShot extends CBlock {
   constructor() {
-    super("oneshot");
+    super("oneshot", false);
   }
 
   $Init() {
@@ -21,8 +21,7 @@ class Block_OneShot extends CBlock {
       `
       *out = (in && !data->lastval);
       data->lastval = in;
-      `,
-      false
+      `
     ;
   }
 
@@ -32,7 +31,7 @@ class Block_OneShot extends CBlock {
 
 class Block_Counter extends CBlock {
   constructor() {
-    super("counter");
+    super("counter", false);
   }
 
   $Init() {
@@ -77,7 +76,7 @@ class Block_Counter extends CBlock {
 
 class Block_Not extends CBlock {
   constructor() {
-    super("NOT");
+    super("NOT", false);
   }
 
   $Init() {
@@ -91,8 +90,7 @@ class Block_Not extends CBlock {
     this.LoopCode =
       `
       *out = !in;
-      `,
-      false
+      `
     ;
   }
 
@@ -102,7 +100,7 @@ class Block_Not extends CBlock {
 
 class Block_And extends CBlock {
   constructor() {
-    super("and");
+    super("and", true);
   }
 
   $Init() {

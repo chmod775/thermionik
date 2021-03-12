@@ -38,6 +38,10 @@ class CGenerator extends Generator {
     return genLines.join('\n');
   }
 
+  GenerateFunctionReturn(value) {
+    return `return ${value};`;
+  }
+
   GenerateArray(name, type, size) {
     return `${type} ${name}[${size}];`;
   }

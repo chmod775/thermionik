@@ -9,9 +9,11 @@ class CBlock extends Block {
   static lang() { return 'CBlock' };
   $Prefix() { return 'b' };
 
-  constructor(name) {
+  constructor(name, advanced) {
     super(name);
 
+    this.author = 'TROMBETTA';
+    this.advanced = (advanced != false);
     this.requirements = [];
 
     this.pin = { plate: {}, plates: [], grid: {}, grids: [] };
@@ -175,6 +177,162 @@ class CBlock extends Block {
     }
   }
 
+  $GenerateClass() {
+    let generator = new JSGenerator();
+
+    if (this.advanced) {
+
+    } else {
+      let genConstructorCode = generator.GenerateFunctionCall('super', [ generator.StringLiteral(this.name), false ], false);
+      let genConstructorFunction = generator.GenerateFunction('constructor', null, [], genConstructorCode);
+  
+      // Author
+      let genAuthorAssignmentCode = generator.GenerateAssignment(
+        generator.StringLiteral(this.author),
+        'this.author'
+      );
+
+      // Pins
+      let genPinsComment = generator.GenerateComment('### PINS ###');
+      let genInitPins = [];
+      let genAddPins = [];
+
+      for (var pg of this.pin.grids) {
+        let pgId = `p_${pg.name}`;
+        let pgArgs = [
+          generator.StringLiteral(pg.name),
+          generator.StringLiteral(pg.type),
+          pg.init
+        ];
+        let genPinCreatorCode = generator.GenerateConst(
+          pgId,
+          '',
+          generator.AccessDirect(
+            pg.constructor.name,
+            generator.GenerateFunctionCall('Create', pgArgs, false)
+          )
+        );
+        genInitPins.push(genPinCreatorCode);
+        genAddPins.push(pgId);
+      }
+
+      for (var pp of this.pin.plates) {
+        let ppId = `p_${pp.name}`;
+        let ppArgs = [
+          pp.name,
+          pp.type,
+          pp.init
+        ];
+        let genPinCreatorCode = generator.GenerateConst(
+          ppId,
+          '',
+          generator.AccessDirect(
+            pp.constructor.name,
+            generator.GenerateFunctionCall('Create', ppArgs, false)
+          )
+        );
+        genInitPins.push(genPinCreatorCode);
+        genAddPins.push(ppId);
+      }
+
+      let genInitPinsCode = genInitPins.join('\n');
+      let genAddPinsCode = generator.GenerateFunctionCall('this.AddPin', [ `[${genAddPins.join(', ')}]` ]);
+
+      // Init function
+      let genInitFunctionCode = [
+        genAuthorAssignmentCode,
+        null,
+        genPinsComment,
+        genInitPinsCode,
+        genAddPinsCode
+      ].join('\n');
+      let genInitFunction = generator.GenerateFunction('$Init', null, [], genInitFunctionCode);
+
+      // Init code
+      let genInitCode = (this.InitCode instanceof Function) ? this.InitCode() : this.InitCode;
+      let genInitCodeFunction = generator.GenerateFunction(
+        'InitCode',
+        '',
+        [],
+        genInitCode ? generator.GenerateFunctionReturn(
+          JSON.stringify(genInitCode)
+        ) : ''
+      );
+
+      // Setup code
+      let genSetupCode = (this.SetupCode instanceof Function) ? this.SetupCode() : this.SetupCode;
+      let genSetupCodeFunction = generator.GenerateFunction(
+        'SetupCode',
+        '',
+        [],
+        genSetupCode ? generator.GenerateFunctionReturn(
+          JSON.stringify(genSetupCode)
+        ) : ''
+      );
+
+      // Loop code
+      let genLoopCode = (this.LoopCode instanceof Function) ? this.LoopCode() : this.LoopCode;
+      let genLoopCodeFunction = generator.GenerateFunction(
+        'LoopCode',
+        '',
+        [],
+        genLoopCode ? generator.GenerateFunctionReturn(
+          JSON.stringify(genLoopCode)
+        ) : ''
+      );
+
+      // Data
+      let genDataContent = ((this.Data instanceof Function) ? this.Data() : this.Data) ?? [];
+      let genDataOBJ = JSON.stringify(genDataContent).replace(/"(\w+)"\s*:/g, '$1:');
+      let genDataCode = generator.GenerateFunction(
+        'Data',
+        '',
+        [],
+        generator.GenerateFunctionReturn(genDataOBJ)
+      );
+
+      // Default Settings
+      let genDefSettingsContent = this.constructor.$DefaultSettings() ?? {};
+      let genDefSettingsOBJ = JSON.stringify(genDefSettingsContent).replace(/"(\w+)"\s*:/g, '$1:');
+      let genDefSettingsCode = generator.GenerateFunction(
+        '$DefaultSettings',
+        'static',
+        [],
+        generator.GenerateFunctionReturn(genDefSettingsOBJ)
+      );
+
+      // Default Configs
+      let genDefConfigsContent = this.constructor.$DefaultConfigs() ?? {};
+      let genDefConfigsOBJ = JSON.stringify(genDefConfigsContent).replace(/"(\w+)"\s*:/g, '$1:');
+      let genDefConfigsCode = generator.GenerateFunction(
+        '$DefaultConfigs',
+        'static',
+        [],
+        generator.GenerateFunctionReturn(genDefConfigsOBJ)
+      );
+
+      // Class
+      let genClassCode = [
+        genConstructorFunction,
+        genInitFunction,
+
+        genDataCode,
+
+        genInitCodeFunction,
+        genSetupCodeFunction,
+        genLoopCodeFunction,
+
+        genDefSettingsCode,
+        genDefConfigsCode
+      ].join('\n');
+
+      let genClassName = `CBlock_${this.name.replace(/\W/g, '')}`;
+      let genClass = generator.GenerateClass(genClassName, 'CBlock', genClassCode);
+
+      return `(${genClass})`;
+    }
+  }
+
   /* ### Utilities ### */
   IsGridPlug() {
     let hasPlates = this.pin.plates.length > 0;
@@ -203,7 +361,7 @@ class CBlock extends Block {
 
 class CSocket extends CBlock {
   constructor(name) {
-    super(name);
+    super(name, true);
   }
 
   $ExternalPins() { console.error("$ExternalPins NOT IMPLEMENTED."); return null; }
