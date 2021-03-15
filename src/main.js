@@ -187,9 +187,6 @@ class Main extends WLBlock {
       p_di_2.pin.value,
       p_do_oled.pin.value_2
     ]);
-
-    // GUI
-    b7.SetGui({ col: 3, row: 2 })
   }
 }
 
@@ -293,13 +290,15 @@ ui.Execute("ADD PLUG Arduino_DigitalInput_Plug 1 {pin:2}");
 ui.Execute("ADD PLUG Arduino_DigitalInput_Plug 2 {pin:3}");
 ui.Execute("ADD PLUG Arduino_OLEDNumber_Plug 1");
 
-ui.Execute("ADD BLOCK Block_OneShot D1");
-ui.Execute("ADD BLOCK Block_Counter E1");
+ui.Execute("ADD BLOCK Block_OneShot B1");
+ui.Execute("ADD BLOCK Block_Counter C1");
 
-ui.Execute('connect PG_1.value D1.in');
-ui.Execute('connect PG_2.value E1.reset');
-ui.Execute('connect D1.out E1.inc');
-ui.Execute('connect E1.actValue PP_1.value_0');
+ui.Execute('connect PG_1.value B1.in');
+ui.Execute('connect PG_2.value C1.reset');
+ui.Execute('connect B1.out C1.inc');
+ui.Execute('connect C1.actValue PP_1.value_0');
+
+ui.Execute("MOVE B1 D2");
 
 /*
 ui.Execute("ADD BLOCK Block_And C3 {size:10}");

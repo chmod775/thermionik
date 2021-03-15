@@ -64,14 +64,15 @@ class UIEditor_WLBlock extends UIEditor {
       ],
       (args) => {
         let arg_name = args.name.toUpperCase();
-        let arg_pos = args.pos;
+        let arg_posRef = args.pos;
+        let arg_pos = Helpers.refToPos(arg_posRef);
         let arg_configs = eval(`(${args.configs})`) ?? {}; // TO BE FIXED AND SANITIZED
 
         let foundBlock = this.ui.toolbox.tubes.find(b => b.name.toUpperCase() == arg_name);
         if (!foundBlock) { return UI_Feedback.Error(`Block ${arg_name} does not exists.`); } 
 
         let newBlockInstance = foundBlock.Create(arg_configs);
-        newBlockInstance.guid = arg_pos;
+        newBlockInstance.UpdateProperties(arg_pos);
 
         this.target.AddBlock(newBlockInstance);
 
@@ -88,14 +89,14 @@ class UIEditor_WLBlock extends UIEditor {
       ],
       (args) => {
         let arg_name = args.name.toUpperCase();
-        let arg_row = args.row;
+        let arg_row = +args.row;
         let arg_configs = eval(`(${args.configs})`) ?? {}; // TO BE FIXED AND SANITIZED
 
         let foundPlug = this.ui.toolbox.tubes.find(b => b.name.toUpperCase() == arg_name);
         if (!foundPlug) { return UI_Feedback.Error(`Plug ${arg_name} does not exists.`); } 
 
         let newPlugInstance = foundPlug.Create(arg_configs);
-        newPlugInstance.guid = (newPlugInstance.IsPlatePlug() ? 'PP_' : 'PG_') + arg_row;
+        newPlugInstance.UpdateProperties({ row: arg_row });
 
         this.target.AddPlug(newPlugInstance);
 
@@ -158,6 +159,28 @@ class UIEditor_WLBlock extends UIEditor {
         return UI_Feedback.Success(`Connected pins.`, retWire);
       else
         return UI_Feedback.Error(`Error connecting pins.`, pinsToConnect);
+    }
+  );
+
+  $move = new UI_Command(
+    'Move a block or plug to a position.',
+    [
+      { name: 'src', desc: 'Source' },
+      { name: 'pos', desc: 'Destination position' }
+    ],
+    (args) => {
+      let arg_src = args.src.toLowerCase();
+
+      let arg_posRef = args.pos;
+      let arg_pos = Helpers.refToPos(arg_posRef);
+    
+      let foundPlug = this.target.plug.plates.find(b => b.guid.toLowerCase() == arg_src) ?? this.target.plug.grids.find(b => b.guid.toLowerCase() == arg_src);
+      let foundBlock = this.target.blocks.find(b => b.guid.toLowerCase() == arg_src) ?? foundPlug;
+      if (!foundBlock) { return UI_Feedback.Error(`Entity with GUID ${arg_src} not found.`); } 
+
+      foundBlock.UpdateProperties(arg_pos);
+
+      return UI_Feedback.Success(`Entity moved.`, foundBlock);
     }
   );
 }
@@ -227,7 +250,7 @@ class UI {
 
   Execute(cmd) {
     console.log(`> ${cmd}`);
-    
+
     let cmd_parts = cmd.split(' ');
 
     if (cmd_parts.length > 0) {

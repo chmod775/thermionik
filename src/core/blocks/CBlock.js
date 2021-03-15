@@ -350,6 +350,15 @@ class CBlock extends Block {
     return this.IsGridPlug() || this.IsPlatePlug();
   }
 
+  $GenerateGUID() {
+    if (this.IsValidPlug()) {
+      console.log(this.properties);
+      return (this.IsPlatePlug() ? 'PP_' : 'PG_') + this.properties.row;
+    } else {
+      return Helpers.posToRef(this.properties);
+    }
+  }
+
   /* ### Requirements ### */
   InitCode() {
     console.error("InitCode NOT IMPLEMENTED."); return TODO;

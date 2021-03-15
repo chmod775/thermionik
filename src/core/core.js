@@ -132,22 +132,22 @@ class BlockCode {
   }
 }
 
+
 class Block {
   constructor(name) {
     this.name = name;
-    this.guid = `${this.$Prefix()}_${Helpers.uuidv4()}`;
+    this.guid = `b_anonymous`;
 
     this.properties = {}; // THERMIONIK access only properties
     this.configs = {}; // Impact only on code generation, so JS level
     this.settings = {}; // Will be in final code
-
-    this.guiConfigs = {};
   }
 
   static Create(configs) {
     let ret = new this();
+    //ret.UpdateProperties(properties);
     ret.SetSettings(this.$DefaultSettings());
-    ret.SetConfigs(Object.assign(this.$DefaultConfigs(), configs || {}));
+    ret.SetConfigs(Object.assign(this.$DefaultConfigs(), configs ?? {}));
     return ret;
   }
 
@@ -157,6 +157,11 @@ class Block {
   }
 
   /* ### Setters ### */
+  UpdateProperties(properties) {
+    Object.assign(this.properties, properties ?? {});
+    this.UpdateGUID();
+  }
+
   SetConfigs(configs) {
     this.configs = configs;
     this.$Init();
@@ -166,11 +171,14 @@ class Block {
     this.settings = settings;
   }
 
-  SetGui(guiConfigs) {
-    this.guiConfigs = guiConfigs;
+  /* ### Utilities ### */
+  DefaultGUID() {
+    return `b_${Helpers.uuidv4()}`;
+  }
+  UpdateGUID() {
+    this.guid = this.properties ? this.$GenerateGUID() : this.DefaultGUID();
   }
 
-  /* ### Utilities ### */
   IsEqual(block) {
     return (this == block);
   }
@@ -196,10 +204,10 @@ class Block {
 
   $GenerateClass() { console.error("$GenerateClass NOT IMPLEMENTED."); return null; }
 
+  $GenerateGUID() { return this.DefaultGUID(); }
+
   static $DefaultConfigs() { return {}; }
   static $DefaultSettings() { return {}; }
-
-  $Prefix() { return '?' };
 }
 
 class Compiler {

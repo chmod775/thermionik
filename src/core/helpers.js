@@ -56,6 +56,32 @@ class Helpers {
     document.body.removeChild(element);
   }
 
+  static posToRef(pos) {
+    return Helpers.numToSSColumn(pos.col ?? 1) + (pos.row ?? 1);
+  }
+
+  static refToPos(ref) {
+    let ret = { col: 0, row: 0 };
+    ref = ref.toUpperCase();
+
+    for (var ch of ref) {
+      let chCode = ch.charCodeAt(0);
+
+      if ((ch >= '0') && (ch <= '9')) {
+        ret.row *= 10;
+        ret.row |= chCode - 48;
+      } else if ((ch >= 'A') && (ch <= 'Z')) {
+        ret.col *= 26;
+        ret.col |= chCode - 64;
+      } else {
+        console.error("Character not valid for reference.", ref);
+        return null;
+      }
+    }
+
+    return ret;
+  }
+
   static numToSSColumn(num){
     var s = '', t;
   

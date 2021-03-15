@@ -99,8 +99,8 @@ class WLBlock_Workspace {
     /*
     for (var p of this.block.plugs) {
       let arr = p.IsPlatePlug() ? this.map.plates : this.map.grids;
-      p.guiConfigs.row = p.guiConfigs.row ?? arr.length;
-      arr[p.guiConfigs.row] = new Block.Render(p);
+      p.properties.row = p.properties.row ?? arr.length;
+      arr[p.properties.row] = new Block.Render(p);
     }
 */
     // Blocks
@@ -108,8 +108,8 @@ class WLBlock_Workspace {
     var bRow = -1;
 
     for (var b of this.block.blocks) {
-      bCol = b.guiConfigs.col = (b.guiConfigs.col ?? (bCol + 1));
-      bRow = b.guiConfigs.row = (b.guiConfigs.row ?? (bRow + 1));
+      bCol = b.properties.col = (b.properties.col ?? (bCol + 1));
+      bRow = b.properties.row = (b.properties.row ?? (bRow + 1));
 
       this.map.blocks[bCol] = this.map.blocks[bCol] ?? [];
       this.map.blocks[bCol][bRow] = new Block.Render(b);
@@ -137,8 +137,8 @@ class WLBlock_Workspace {
       let renderedBlock = new Block.Render(b);
       let renderedBlockSVG = renderedBlock.Render();
 
-      if (b.guiConfigs)
-        bx = b.guiConfigs.x;
+      if (b.properties)
+        bx = b.properties.x;
       
       renderedBlockSVG.move(startx + (bx * cellSize), starty);
 
