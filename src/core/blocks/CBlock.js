@@ -202,7 +202,7 @@ class CBlock extends Block {
         let pgArgs = [
           generator.StringLiteral(pg.name),
           generator.StringLiteral(pg.type),
-          pg.init
+          generator.StringLiteral(pg.init)
         ];
         let genPinCreatorCode = generator.GenerateConst(
           pgId,

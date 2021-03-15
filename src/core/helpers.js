@@ -42,6 +42,34 @@ class Helpers {
     }
     return hash >>> 0;
   }
+
+  static download(filename, text) {
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+  
+    element.style.display = 'none';
+    document.body.appendChild(element);
+  
+    element.click();
+  
+    document.body.removeChild(element);
+  }
+
+  static numToSSColumn(num){
+    var s = '', t;
+  
+    while (num > 0) {
+      t = (num - 1) % 26;
+      s = String.fromCharCode(65 + t) + s;
+      num = (num - t)/26 | 0;
+    }
+    return s || undefined;
+  }
+
+  static SSColumToNum(ss) {
+
+  }
 }
 /*
 var json = typeof JSON !== 'undefined' ? JSON : require('jsonify');

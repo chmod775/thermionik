@@ -96,12 +96,13 @@ class WLBlock_Workspace {
 
   Generate() {
     // Plugs
+    /*
     for (var p of this.block.plugs) {
       let arr = p.IsPlatePlug() ? this.map.plates : this.map.grids;
       p.guiConfigs.row = p.guiConfigs.row ?? arr.length;
       arr[p.guiConfigs.row] = new Block.Render(p);
     }
-
+*/
     // Blocks
     var bCol = -1;
     var bRow = -1;
@@ -183,7 +184,14 @@ class WLBlock_Workspace {
         }
 
         bx += padLeft;
-        let gridSvg = this.svgGrid.rect(cellSize, cellSize).move(bx, by).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
+        
+        let foundCellBlock = (this.map.blocks[x] ?? [])[y] ?? null;
+        if (foundCellBlock) {
+          this.svgGrid.add(foundCellBlock.svg.move(bx, by));
+        } else {
+          this.svgGrid.rect(cellSize, cellSize).move(bx, by).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
+        }        
+        
         bx += cellSize;
       }
 

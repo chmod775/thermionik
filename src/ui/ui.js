@@ -71,6 +71,7 @@ class UIEditor_WLBlock extends UIEditor {
         if (!foundBlock) { return UI_Feedback.Error(`Block ${arg_name} does not exists.`); } 
 
         let newBlockInstance = foundBlock.Create(arg_configs);
+        newBlockInstance.guid = arg_pos;
 
         this.target.AddBlock(newBlockInstance);
 
@@ -94,6 +95,7 @@ class UIEditor_WLBlock extends UIEditor {
         if (!foundPlug) { return UI_Feedback.Error(`Plug ${arg_name} does not exists.`); } 
 
         let newPlugInstance = foundPlug.Create(arg_configs);
+        newPlugInstance.guid = (newPlugInstance.IsPlatePlug() ? 'PP_' : 'PG_') + arg_row;
 
         this.target.AddPlug(newPlugInstance);
 
@@ -137,10 +139,11 @@ class UIEditor_WLBlock extends UIEditor {
       for (var pId of arg_pins) {
         let pId_parts = pId.split('.');
         if (pId_parts.length != 2) { return UI_Feedback.Error(`Wrong format for pin ID ${pId}.`); }
-        let pBlockGUID = pId_parts[0];
+        let pBlockGUID = pId_parts[0].toLowerCase();
         let pName = pId_parts[1];
 
-        let foundBlock = this.target.blocks.find(b => b.guid.toLowerCase() == pBlockGUID);
+        let foundPlug = this.target.plug.plates.find(b => b.guid.toLowerCase() == pBlockGUID) ?? this.target.plug.grids.find(b => b.guid.toLowerCase() == pBlockGUID);
+        let foundBlock = this.target.blocks.find(b => b.guid.toLowerCase() == pBlockGUID) ?? foundPlug;
         if (!foundBlock) { return UI_Feedback.Error(`Pin block with GUID ${pBlockGUID} not found.`); } 
 
         let foundBlockPin = foundBlock.pin[pName];
@@ -223,6 +226,8 @@ class UI {
   }
 
   Execute(cmd) {
+    console.log(`> ${cmd}`);
+    
     let cmd_parts = cmd.split(' ');
 
     if (cmd_parts.length > 0) {

@@ -452,10 +452,45 @@ class WLBlock extends CBlock {
     ].join('\n');
     let genInitFunction = generator.GenerateFunction('$Init', null, [], genInitCode);
 
+    // Data
+    let genDataContent = ((this.Data instanceof Function) ? this.Data() : this.Data) ?? [];
+    let genDataOBJ = JSON.stringify(genDataContent).replace(/"(\w+)"\s*:/g, '$1:');
+    let genDataCode = generator.GenerateFunction(
+      'Data',
+      '',
+      [],
+      generator.GenerateFunctionReturn(genDataOBJ)
+    );
+
+    // Default Settings
+    let genDefSettingsContent = this.constructor.$DefaultSettings() ?? {};
+    let genDefSettingsOBJ = JSON.stringify(genDefSettingsContent).replace(/"(\w+)"\s*:/g, '$1:');
+    let genDefSettingsCode = generator.GenerateFunction(
+      '$DefaultSettings',
+      'static',
+      [],
+      generator.GenerateFunctionReturn(genDefSettingsOBJ)
+    );
+
+    // Default Configs
+    let genDefConfigsContent = this.constructor.$DefaultConfigs() ?? {};
+    let genDefConfigsOBJ = JSON.stringify(genDefConfigsContent).replace(/"(\w+)"\s*:/g, '$1:');
+    let genDefConfigsCode = generator.GenerateFunction(
+      '$DefaultConfigs',
+      'static',
+      [],
+      generator.GenerateFunctionReturn(genDefConfigsOBJ)
+    );
+
     // Class
     let genClassCode = [
       genConstructorFunction,
-      genInitFunction
+      genInitFunction,
+
+      genDataCode,
+
+      genDefSettingsCode,
+      genDefConfigsCode
     ].join('\n');
 
     let genClassName = `WLBlock_${this.name.replace(/\W/g, '')}`;

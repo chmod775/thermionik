@@ -137,6 +137,7 @@ class Block {
     this.name = name;
     this.guid = `${this.$Prefix()}_${Helpers.uuidv4()}`;
 
+    this.properties = {}; // THERMIONIK access only properties
     this.configs = {}; // Impact only on code generation, so JS level
     this.settings = {}; // Will be in final code
 
@@ -242,6 +243,5 @@ class Board {
 
   static Create(mainBlock) { console.error("Create NOT IMPLEMENTED."); return null; }
 }
-
 
 

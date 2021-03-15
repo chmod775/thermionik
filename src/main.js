@@ -1,5 +1,4 @@
 let mainGenerator = new CGenerator();
-
 class Block_OneShot extends CBlock {
   constructor() {
     super("oneshot", false);
@@ -43,7 +42,6 @@ class Block_Counter extends CBlock {
         GridPin.Create('reset', 'bool', 'false'),
 
         PlatePin.Create('actValue', 'int', '0'),
-        PlatePin.Create('atTarget', 'bool', 'false')
       ]
     );
 
@@ -55,8 +53,9 @@ class Block_Counter extends CBlock {
       `
       if (inc)
         data->value++;
+      if (reset)
+        data->value = 0;
       *actValue = data->value;
-      *atTarget = (data->value >= data->atTarget);
       `
     ;
 
@@ -133,15 +132,20 @@ class Block_WL extends WLBlock {
   }
 
   $Init() {
-    let p_in = GridSocket.Create({ id: 'in', type: 'bool', init: 'false'});
-    let p_out = PlateSocket.Create({ id: 'out', type: 'bool', init: 'false'});
-    this.AddPlug([ p_in, p_out ]);
-
+    let plugs = [GridSocket.Create({ id: 'out', type: 'bool', init: 'false'})];
+    let nGrids = Math.max(+this.configs.size, 2);
+    for (var gIdx = 0; gIdx < nGrids; gIdx++) {
+      let p_in = PlateSocket.Create({ id: `in_${gIdx}`, type: 'bool', init: 'false'});
+      plugs.push(p_in);
+    }
+    this.AddPlug(plugs);
+    console.log(plugs);
     // Wiring
-    this.ConnectWire([
-      p_in,
-      p_out
-    ]);
+    this.ConnectWire(plugs);
+  }
+
+  static $DefaultConfigs() {
+    return { size: 2 };
   }
 }
 
@@ -263,13 +267,6 @@ class Dispenser extends CLBlock {
 let mainBlock = Main.Create();
 let mainBoard = ArduinoUno_Board.Create(mainBlock);
 
-// GUI
-let renderJS = SVG().addTo('#render').size('100%', '100%');
-
-renderJS.clear();
-
-//let workspace = new WLBlock.Workspace(renderJS, mainBlock);
-
 let ui = new UI();
 
 ui.SetToolbox({
@@ -292,6 +289,19 @@ ui.SetToolbox({
 });
 
 ui.Execute("BOARD ArduinoUno_Board");
+ui.Execute("ADD PLUG Arduino_DigitalInput_Plug 1 {pin:2}");
+ui.Execute("ADD PLUG Arduino_DigitalInput_Plug 2 {pin:3}");
+ui.Execute("ADD PLUG Arduino_OLEDNumber_Plug 1");
+
+ui.Execute("ADD BLOCK Block_OneShot D1");
+ui.Execute("ADD BLOCK Block_Counter E1");
+
+ui.Execute('connect PG_1.value D1.in');
+ui.Execute('connect PG_2.value E1.reset');
+ui.Execute('connect D1.out E1.inc');
+ui.Execute('connect E1.actValue PP_1.value_0');
+
+/*
 ui.Execute("ADD BLOCK Block_And C3 {size:10}");
 ui.Execute("ADD BLOCK Block_Not");
 ui.Execute('connect b_8.out b_7.in_2');
@@ -304,8 +314,17 @@ ui.Execute("ADD BLOCK WLBlock_chmod");
 
 ui.Execute('editor edit WLBlock_chmod')
 ui.Execute("ADD BLOCK Block_Not");
-ui.Execute('editor save')
 
-// IT MUST UPDATE ALL THE CREATED INSTANCES OF WLBLOCK_CHMOD
+ui.Execute('editor save') // IT MUST UPDATE ALL THE CREATED INSTANCES OF WLBLOCK_CHMOD
+*/
 
 //console.log(mainBoard.Generate());
+//Helpers.download('main.ino', ui.board.Generate());
+
+
+// GUI
+let renderJS = SVG().addTo('#render').size('100%', '100%');
+
+renderJS.clear();
+
+let workspace = new WLBlock.Workspace(renderJS, ui.activeEditor.target);
