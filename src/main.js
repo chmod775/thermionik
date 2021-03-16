@@ -322,7 +322,7 @@ ui.Execute('editor save') // IT MUST UPDATE ALL THE CREATED INSTANCES OF WLBLOCK
 
 
 // GUI
-let renderJS = SVG().addTo('#render').size('100%', '100%');
+let renderJS = SVG('render').size('100%', '100%');
 
 renderJS.clear();
 

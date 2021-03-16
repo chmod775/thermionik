@@ -24,16 +24,19 @@ class Block_Render {
   }
 
   Resize(w, h) {
+    if ((this.size.h == h) && (this.size.w == w)) return this.size; // Avoid useless svg resizing
+
     this.size.h = h;
     this.size.w = w;
-    this.svgBody.size(this.size.w, this.size.h);
 
     let labelHeight = this.svgLabel.bbox().h;
 
-    this.svgLabel.cx(this.size.w / 2).y(labelPadding);
+    this.svgLabel.move(this.size.w / 2, labelPadding);
 
     let separatorY = Math.floor(labelHeight + (labelPadding * 2));
     this.svgSeparator.plot(0, separatorY, this.size.w, separatorY);
+
+    this.svgBody.size(this.size.w, this.size.h);
 
     return this.size;
   }
@@ -42,10 +45,10 @@ class Block_Render {
     this.svg = new SVG.G();
 
     // Create body
-    this.svgBody = this.svg.rect(0, 0).radius(10).fill('#e5e7e6ff').stroke({ color: '#5e3843ff', width: 2 });
+    this.svgBody = this.svg.rect(cellSize, cellSize).radius(10).fill('#e5e7e6ff').stroke({ color: '#5e3843ff', width: 2 });
 
     // Create label
-    this.svgLabel = this.svg.text(this.block.name).fill('#5e3843ff');//.font({ size: 10, anchor: 'middle' });
+    this.svgLabel = this.svg.text(this.block.name).fill('#5e3843ff').font({ size: 14, anchor: 'middle' });
 
     // Create separator
     this.svgSeparator = this.svg.line().stroke({ color: '#5e3843ff', width: 2 });
@@ -81,67 +84,34 @@ class WLBlock_Workspace {
     this.size = { w: 6, h: 10 };
 
     this.tableStructure = {
-      cols: [],
-      rows: []
+      cols: [], // { offset: 0, wireCells: [ { svg: null, offset: 0, size: 0 } ], wiringCell: 30, blockCell: 100 }
+      rows: [],  // { offset: 0, wireCells: [ { svg: null, offset: 0, size: 0 } ], wiringCell: 30, blockCell: 100 }
+      blocks: [] // Matrix
     };
 
     this.map = {
-      grids: [],
-      blocks: [], // Matrix
-      plates: [],
-
       wiresCount: { cols: { 3: 7 }, rows: { 1: 5 } }
     };
 
     this.Generate();
-    this.GenerateTableStructure();
 
-    // Create grid and add to root svg
-    this.svgGrid = new SVG.G();
-    this.svg.add(this.svgGrid);
-        
-    // Render blocks
-    this.svgTubes = new SVG.G();
-    this.svg.add(this.svgTubes);
-
-    // Render wiring
+    this.UpdateTableStructure();
 
     this.RenderGrid();
   }
 
   Generate() {
-    // Grids
-    for (var p of this.block.plug.grids) {
-      let arr = this.map.grids;
-      p.properties.row = Math.max(1, p.properties.row ?? arr.length);
-      arr[p.properties.row - 1] = new Block.Render(p);
-    }
-
-    // Blocks
-    var bCol = 0;
-    var bRow = 0;
-
-    for (var b of this.block.blocks) {
-      bCol = b.properties.col = Math.max(1, (b.properties.col ?? (bCol + 1)));
-      bRow = b.properties.row = Math.max(1, (b.properties.row ?? (bRow + 1)));
-
-      this.map.blocks[bCol - 1] = this.map.blocks[bCol - 1] ?? [];
-      this.map.blocks[bCol - 1][bRow - 1] = new Block.Render(b);
-    }
-
-    // Plates
-    for (var p of this.block.plug.plates) {
-      let arr = this.map.plates;
-      p.properties.row = Math.max(1, p.properties.row ?? arr.length);
-      arr[p.properties.row - 1] = new Block.Render(p);
-    }
+    // Create grid container and add to root svg
+    this.svgGrid = new SVG.G();
+    this.svg.add(this.svgGrid);
+        
+    // Create tube container and add to root svg
+    this.svgTubes = new SVG.G();
+    this.svg.add(this.svgTubes);
   }
 
-  GenerateTableStructure() {
-    this.tableStructure = {
-      cols: [], // { offset: 0, wireCells: [ { offset: 0, size: 0 } ], wiringCell: 30, blockCell: 100 }
-      rows: []  // { offset: 0, wireCells: [ { offset: 0, size: 0 } ], wiringCell: 30, blockCell: 100 }
-    };
+  UpdateTableStructure() {
+    let ts = this.tableStructure;
 
     // Generate rows
     var topWiresCount;
@@ -152,21 +122,22 @@ class WLBlock_Workspace {
 
       let rowInfo = {
         offset: by,
-        wireCells: [],
+        wireCells: ts.rows[y] ? ts.rows[y].wireCells : [],
         wiringCell: padTop,
         blockCell: (y < this.size.h) ? cellSize : 0
       };
 
       for (var wIdx = 0; wIdx < topWiresCount; wIdx++) {
         let wy = (wIdx * wireSize) + (wireSize / 2);
-        let wireCellInfo = {
+        let wireCellInfo = rowInfo.wireCells[wIdx] ?? {
           offset: wy,
           size: wireSize
         };
         rowInfo.wireCells[wIdx] = wireCellInfo;
       }
+      rowInfo.wireCells.length = topWiresCount; // Remove unused extra wire cells
 
-      this.tableStructure.rows[y] = rowInfo;
+      ts.rows[y] = rowInfo;
 
       by += rowInfo.wiringCell + rowInfo.blockCell;
     }
@@ -174,35 +145,33 @@ class WLBlock_Workspace {
     // Generate cols
     var leftWiresCount;
     var bx = 0;
-
-    // Block cols
     for (var x = 0; x <= this.size.w; x++) {
       leftWiresCount = Math.max(3, this.map.wiresCount.cols[x] || 0);
       let padLeft = leftWiresCount * wireSize;
 
       let colInfo = {
         offset: bx,
-        wireCells: [],
+        wireCells: ts.cols[x] ? ts.cols[x].wireCells : [],
         wiringCell: padLeft,
         blockCell: (x < this.size.w) ? cellSize : 0
       };
 
       for (var wIdx = 0; wIdx < leftWiresCount; wIdx++) {
         let wx = (wIdx * wireSize) + (wireSize / 2);
-        let wireCellInfo = {
+        let wireCellInfo = colInfo.wireCells[wIdx] ?? {
           offset: wx,
           size: wireSize
         };
         colInfo.wireCells[wIdx] = wireCellInfo;
       }
+      colInfo.wireCells.length = leftWiresCount; // Remove unused extra wire cells
 
-      this.tableStructure.cols[x] = colInfo;
+      ts.cols[x] = colInfo;
 
       bx += colInfo.wiringCell + colInfo.blockCell;
     }
 
-    console.log(this.tableStructure);
-    return this.tableStructure;
+    return ts;
   }
 
   CalculateBlockBox(pos, blockSpan) {
@@ -224,6 +193,7 @@ class WLBlock_Workspace {
 
   RenderGrid() {
     let ts = this.tableStructure;
+    console.log(ts);
 
     this.svgGrid.clear();
 
@@ -233,26 +203,77 @@ class WLBlock_Workspace {
     let starty = 500;
 
     // Draw grid
-    for (var r = 0; r < this.size.h; r++) {
+    for (var r = 0; r <= this.size.h; r++) {
       let tsr = ts.rows[r];
       for (var wCell of tsr.wireCells) {
         let wy = tsr.offset + wCell.offset + starty;
-        this.svgGrid.line(0, wy, '100%', wy).stroke({ color: '#50464964', width: 1 });
+        let svg = wCell.svg ?? this.svgGrid.line().stroke({ color: '#50464964', width: 1 });
+        svg.plot(0, wy, '100%', wy);
       }
     }
 
-    for (var c = 0; c < this.size.w; c++) {
+    for (var c = 0; c <= this.size.w; c++) {
       let tsc = ts.cols[c];
       for (var wCell of tsc.wireCells) {
         let wx = tsc.offset + wCell.offset + startx;
-        this.svgGrid.line(wx, 0, wx, '100%').stroke({ color: '#50464964', width: 1 });
+        let svg = wCell.svg ?? this.svgGrid.line().stroke({ color: '#50464964', width: 1 });
+        svg.plot(wx, 0, wx, '100%');
       }
     }
 
     // Draw plugs
+    // Grids
+    var pGridRow = 0;
+    let gridx = startx + ts.cols[0].offset;
+    for (var p of this.block.plug.grids) {
+      pGridRow = p.properties.row = Math.max(1, (p.properties.row ?? (pGridRow + 1)));
+
+      let tsr = ts.rows[pGridRow - 1];
+      let by = tsr.offset + tsr.wiringCell + starty;
+      
+      let render = new Block.Render(p);
+      let bWidth = render.span.cols * cellSize;
+      render.Resize(bWidth, render.span.rows * cellSize);
+      this.svgGrid.add(render.svg.move(gridx - bWidth - (cellSize / 2), by));
+    }
+    // Plate
+    var pPlateRow = 0;
+    let lastCol = ts.cols[ts.cols.length - 1];
+    let platex = startx + lastCol.offset + lastCol.wiringCell + lastCol.blockCell;
+    for (var p of this.block.plug.plates) {
+      pPlateRow = p.properties.row = Math.max(1, (p.properties.row ?? (pPlateRow + 1)));
+
+      let tsr = ts.rows[pPlateRow - 1];
+      let by = tsr.offset + tsr.wiringCell + starty;
+      
+      let render = new Block.Render(p);
+      let bWidth = render.span.cols * cellSize;
+      render.Resize(bWidth, render.span.rows * cellSize);
+      this.svgGrid.add(render.svg.move(platex + (cellSize / 2), by));
+    }
+
+    // Draw blocks
+    var bCol = 0;
+    var bRow = 0;
+
+    for (var b of this.block.blocks) {
+      bCol = b.properties.col = Math.max(1, (b.properties.col ?? (bCol + 1)));
+      bRow = b.properties.row = Math.max(1, (b.properties.row ?? (bRow + 1)));
+
+      let render = new Block.Render(b);
+      let box = this.CalculateBlockBox(
+        { c: bCol - 1, r: bRow - 1},
+        render.span
+      );
+      render.Resize(box.w, box.h);
+      render.svg.move(box.x + startx, box.y + starty);
+      this.svgGrid.add(render.svg);
+    }
+
+    return;
+    // Draw plugs
     for (var r = 0; r < this.size.h; r++) {
       let tsr = ts.rows[r];
-
       let by = tsr.offset + tsr.wiringCell + starty;
 
       // Grid
@@ -261,10 +282,10 @@ class WLBlock_Workspace {
       if (foundCellGridPlug) {
         let bWidth = foundCellGridPlug.span.cols * cellSize;
         foundCellGridPlug.Resize(bWidth, foundCellGridPlug.span.rows * cellSize);
-        this.svgGrid.add(foundCellGridPlug.svg.move(gridx - bWidth, by));
+        this.svgGrid.add(foundCellGridPlug.svg.move(gridx - bWidth - (cellSize / 2), by));
       } else {
         let bWidth = cellSize * 2;
-        this.svgGrid.rect(bWidth, cellSize).move(gridx - bWidth, by).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
+        this.svgGrid.rect(bWidth, cellSize).move(gridx - bWidth - (cellSize / 2), by).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
       }
 
       // Plate
@@ -274,10 +295,10 @@ class WLBlock_Workspace {
       if (foundCellPlatePlug) {
         let bWidth = foundCellPlatePlug.span.cols * cellSize;
         foundCellPlatePlug.Resize(bWidth, foundCellPlatePlug.span.rows * cellSize);
-        this.svgGrid.add(foundCellPlatePlug.svg.move(platex, by));
+        this.svgGrid.add(foundCellPlatePlug.svg.move(platex + (cellSize / 2), by));
       } else {
         let bWidth = cellSize * 2;
-        this.svgGrid.rect(bWidth, cellSize).move(platex, by).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
+        this.svgGrid.rect(bWidth, cellSize).move(platex + (cellSize / 2), by).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
       }
     }
 
@@ -294,92 +315,15 @@ class WLBlock_Workspace {
             foundCellBlock.span
           );
           foundCellBlock.Resize(box.w, box.h);
-          this.svgGrid.add(foundCellBlock.svg.move(box.x + startx, box.y + starty));
+          foundCellBlock.svg.move(box.x + startx, box.y + starty);
+          console.log(box.x + startx, box.y + starty, box.w, box.h);
+          this.svgGrid.add(foundCellBlock.svg);
         } else {
           let bx = tsc.offset + tsc.wiringCell + startx;
           let by = tsr.offset + tsr.wiringCell + starty;
           this.svgGrid.rect(cellSize, cellSize).move(bx, by).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
         }
       }
-    }
-
-
-    return;
-    var topWiresCount, leftWiresCount;
-
-    var y = starty;
-    for (var r = 0; r < this.size.h; r++) {
-      topWiresCount = Math.max(3, this.map.wiresCount.rows[r] || 0);
-      let padTop = topWiresCount * wireSize;
-
-      for (var wIdx = 0; wIdx < topWiresCount; wIdx++) {
-        let wy = (wIdx * wireSize) + (wireSize / 2) + y;
-        this.svgGrid.line(0, wy, '100%', wy).stroke({ color: '#50464964', width: 1 });
-      }
-
-      y += padTop;
-
-      var x = startx;
-
-      // Grid
-      let foundCellGridPlug = this.map.grids[r] ?? null;
-      if (foundCellGridPlug) {
-        this.svgGrid.add(foundCellGridPlug.svg.move(x, y));
-      } else {
-        this.svgGrid.rect(cellSize, cellSize).move(x, y).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
-      }
-
-      x += cellSize;
-
-      for (var c = 0; c < this.size.w; c++) {
-        leftWiresCount = Math.max(3, this.map.wiresCount.cols[c] || 0);
-        let padLeft = leftWiresCount * wireSize;
-
-        if (r == 0) {
-          for (var wIdx = 0; wIdx < leftWiresCount; wIdx++) {
-            let wx = (wIdx * wireSize) + (wireSize / 2) + x;
-            this.svgGrid.line(wx, 0, wx, '100%').stroke({ color: '#50464964', width: 1 });
-          }
-        }
-
-        x += padLeft;
-        
-        let foundCellBlock = (this.map.blocks[c] ?? [])[r] ?? null;
-        if (foundCellBlock) {
-          let box = this.CalculateBlockBox(
-            { c: c, r: r},
-            foundCellBlock.span
-          );
-          foundCellBlock.Resize(box.w, box.h);
-          this.svgGrid.add(foundCellBlock.svg.move(box.x + startx, box.y + starty));
-        } else {
-          let tx = this.tableStructure.cols[c].offset + this.tableStructure.cols[c].wiringCell + startx;
-          let ty = this.tableStructure.rows[r].offset + this.tableStructure.rows[r].wiringCell + starty;
-          this.svgGrid.rect(cellSize, cellSize).move(tx, ty).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
-        }        
-        
-        x += cellSize;
-      }
-
-      // Plate
-      let foundCellPlatePlug = this.map.plates[r] ?? null;
-      if (foundCellPlatePlug) {
-        this.svgGrid.add(foundCellPlatePlug.svg.move(x, y));
-      } else {
-        this.svgGrid.rect(cellSize, cellSize).move(x, y).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
-      }
-
-      y += cellSize;
-    }
-
-    for (var wIdx = 0; wIdx < topWiresCount; wIdx++) {
-      let wy = (wIdx * wireSize) + (wireSize / 2) + y;
-      this.svgGrid.line(0, wy, '100%', wy).stroke({ color: '#50464964', width: 1 });
-    }
-
-    for (var wIdx = 0; wIdx < leftWiresCount; wIdx++) {
-      let wx = (wIdx * wireSize) + (wireSize / 2) + x;
-      this.svgGrid.line(wx, 0, wx, '100%').stroke({ color: '#50464964', width: 1 });
     }
   }
 
