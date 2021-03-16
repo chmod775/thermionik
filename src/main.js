@@ -30,7 +30,7 @@ class Block_OneShot extends CBlock {
 
 class Block_Counter extends CBlock {
   constructor() {
-    super("counter", false);
+    super("countercountercounter", false);
   }
 
   $Init() {
