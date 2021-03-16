@@ -16,7 +16,7 @@ class CBlock extends Block {
     this.advanced = (advanced != false);
     this.requirements = [];
 
-    this.pin = { plate: {}, plates: [], grid: {}, grids: [] };
+    this.pin = { all: [], plate: {}, plates: [], grid: {}, grids: [] };
   }
 
   $Deinit() {
@@ -41,6 +41,7 @@ class CBlock extends Block {
 
     let pName = pin.name;
 
+    this.pin.all.push(pin);
     this.pin[pName] = pin;
     if (pin.isPlate) {
       this.pin.plate[pName] = pin;
@@ -65,6 +66,7 @@ class CBlock extends Block {
     delete this.pin.plate[pName];
     delete this.pin.grids[pName];
 
+    this.pin.all = this.pin.all.filter(p => p.name != pName);
     this.pin.plates = this.pin.plates.filter(p => p.name != pName);
     this.pin.grids = this.pin.grids.filter(p => p.name != pName);
   }

@@ -58,7 +58,7 @@ class WLBlock extends CBlock {
   constructor(name) {
     super(name, true);
   
-    this.plug = { plate: {}, plates: [], grid: {}, grids: [] };
+    this.plug = { all: [], plate: {}, plates: [], grid: {}, grids: [] };
 
     this.blocks = [];
     this.wires = [];
@@ -101,6 +101,7 @@ class WLBlock extends CBlock {
 
     let pId = plug.configs.id ?? plug.guid;
 
+    this.plug.all.push(plug);
     this.plug[pId] = plug;
     if (plug.IsPlatePlug()) {
       this.plug.plate[pId] = plug;
@@ -128,6 +129,7 @@ class WLBlock extends CBlock {
     delete this.plug.plate[pId];
     delete this.plug.grids[pId];
 
+    this.plug.all = this.plug.all.filter(p => p.guid != plug.guid);
     this.plug.plates = this.plug.plates.filter(p => p.guid != plug.guid);
     this.plug.grids = this.plug.grids.filter(p => p.guid != plug.guid);
 

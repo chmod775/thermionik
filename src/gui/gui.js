@@ -7,6 +7,37 @@ let labelPadding = 5;
 // Pixel: { x, y, w, h }
 // Cell:  { c, r, cols, rows }
 
+class Pin_Render {
+  constructor(pin) {
+    this.pin = pin;
+
+    this.svg = null;
+    this.svgPin = null;
+    this.svgLabel = null;
+
+    this.Create();
+  }
+
+  Create() {
+    this.svg = new SVG.G();
+
+    if (this.pin.isPlate) {
+      // Create pin
+      this.svgPin = this.svg.circle(12).fill('white').stroke({ color: '#5e3843ff', width: 2 }).move(-12, 0);
+      // Create label
+      this.svgLabel = this.svg.text(this.pin.name).fill('#5e3843ff').font({ size: 14, anchor: 'right' });
+      this.svgLabel.move(-this.svgLabel.bbox().w - 15, 0);
+    } else {
+      // Create pin
+      this.svgPin = this.svg.circle(12).fill('white').stroke({ color: '#5e3843ff', width: 2 });
+      // Create label
+      this.svgLabel = this.svg.text(this.pin.name).fill('#5e3843ff').font({ size: 14, anchor: 'left' }).move(15, 0);
+    }
+
+    return this.svg;
+  }
+}
+
 class Block_Render {
   constructor(block) {
     this.block = block;
@@ -18,7 +49,12 @@ class Block_Render {
     this.svgBody = null;
     this.svgLabel = null;
     this.svgSeparator = null;
-    this.svgPins = [];
+
+    this.pinRenders = {
+      all: [],
+      grids: [],
+      plates: []
+    };
 
     this.Create();
   }
@@ -38,6 +74,16 @@ class Block_Render {
 
     this.svgBody.size(this.size.w, this.size.h);
 
+    for (var pIdx in this.pinRenders.grids) {
+      let p = this.pinRenders.grids[pIdx];
+      p.svg.move(-6, (pIdx * (pinHeight / 2)) + separatorY + (pinHeight / 4));
+    }
+
+    for (var pIdx in this.pinRenders.plates) {
+      let p = this.pinRenders.plates[pIdx];
+      p.svg.move(this.size.w + 6, (pIdx * (pinHeight / 2)) + separatorY + (pinHeight / 4));
+    }
+
     return this.size;
   }
 
@@ -52,6 +98,25 @@ class Block_Render {
 
     // Create separator
     this.svgSeparator = this.svg.line().stroke({ color: '#5e3843ff', width: 2 });
+
+    // Create pins
+    this.pinRenders = {
+      all: [],
+      grids: [],
+      plates: []
+    };
+    for (var p of this.block.pin.grids) {
+      let newPinRender = new Pin_Render(p);
+      this.svg.add(newPinRender.svg);
+      this.pinRenders.all.push(newPinRender);
+      this.pinRenders.grids.push(newPinRender);
+    }
+    for (var p of this.block.pin.plates) {
+      let newPinRender = new Pin_Render(p);
+      this.svg.add(newPinRender.svg);
+      this.pinRenders.all.push(newPinRender);
+      this.pinRenders.plates.push(newPinRender);
+    }
 
     // Calculate span dimensions
     this.CalculateSpan();
@@ -86,6 +151,10 @@ class WLBlock_Workspace {
     this.tableStructure = {
       cols: [], // { offset: 0, wireCells: [ { svg: null, offset: 0, size: 0 } ], wiringCell: 30, blockCell: 100 }
       rows: [],  // { offset: 0, wireCells: [ { svg: null, offset: 0, size: 0 } ], wiringCell: 30, blockCell: 100 }
+      plugs: {
+        grids: [],
+        plates: []
+      },
       blocks: [] // Matrix
     };
 
@@ -95,19 +164,21 @@ class WLBlock_Workspace {
 
     this.Generate();
 
-    this.UpdateTableStructure();
-
-    this.RenderGrid();
+    this.Render();
   }
 
   Generate() {
     // Create grid container and add to root svg
     this.svgGrid = new SVG.G();
     this.svg.add(this.svgGrid);
-        
+
     // Create tube container and add to root svg
     this.svgTubes = new SVG.G();
     this.svg.add(this.svgTubes);
+
+    // Create wires container and add to root svg
+    this.svgWiring = new SVG.G();
+    this.svg.add(this.svgWiring);
   }
 
   UpdateTableStructure() {
@@ -191,13 +262,57 @@ class WLBlock_Workspace {
     return ret;
   }
 
+  CalculatePinPos(pin) {
+    let ret = { x: 0, y: 0 };
+
+    let parentBlock = pin.block;
+    var parentRender = null;
+    if (parentBlock.IsValidPlug()) {
+      if (parentBlock.IsPlatePlug()) {
+        parentRender = this.tableStructure.plugs.plates[parentBlock.properties.row - 1];
+      } else {
+        parentRender = this.tableStructure.plugs.grids[parentBlock.properties.row - 1];
+      }
+    } else {
+      parentRender = this.tableStructure.blocks[parentBlock.properties.col - 1][parentBlock.properties.row - 1];
+    }
+
+    if (!parentRender) { console.error("Parent render not found."); }
+
+    let pinRender = parentRender.pinRenders.all.find(p => p.pin.name == pin.name);
+    
+    ret.x = pinRender.svgPin.cx() + pinRender.svg.x() + parentRender.svg.x();
+    ret.y = pinRender.svgPin.cy() + pinRender.svg.y() + parentRender.svg.y();
+
+    return ret;
+  }
+
+  RenderWiring() {
+    let ts = this.tableStructure;
+    this.svgWiring.clear();
+
+    let startx = 500;
+    let starty = 500;
+    
+    for (var w of this.block.wires) {
+      let platePin = w.platePin;
+
+      let platePinPos = this.CalculatePinPos(platePin);
+
+      for (var gridPin of w.gridPins) {
+        let gridPinPos = this.CalculatePinPos(gridPin);
+
+        console.log(platePinPos.x, platePinPos.y, gridPinPos.x, gridPinPos.y);
+        this.svgWiring.line(platePinPos.x, platePinPos.y, gridPinPos.x, gridPinPos.y).stroke({ color: 'black', width: 3, linecap: 'round'  });
+      }
+    }
+
+  }
+
   RenderGrid() {
     let ts = this.tableStructure;
-    console.log(ts);
 
     this.svgGrid.clear();
-
-    // Calculate
 
     let startx = 500;
     let starty = 500;
@@ -235,6 +350,7 @@ class WLBlock_Workspace {
       let bWidth = render.span.cols * cellSize;
       render.Resize(bWidth, render.span.rows * cellSize);
       this.svgGrid.add(render.svg.move(gridx - bWidth - (cellSize / 2), by));
+      this.tableStructure.plugs.grids[pGridRow - 1] = render;
     }
     // Plate
     var pPlateRow = 0;
@@ -250,12 +366,13 @@ class WLBlock_Workspace {
       let bWidth = render.span.cols * cellSize;
       render.Resize(bWidth, render.span.rows * cellSize);
       this.svgGrid.add(render.svg.move(platex + (cellSize / 2), by));
+      this.tableStructure.plugs.plates[pPlateRow - 1] = render;
     }
 
     // Draw blocks
     var bCol = 0;
     var bRow = 0;
-
+    this.tableStructure.blocks = [];
     for (var b of this.block.blocks) {
       bCol = b.properties.col = Math.max(1, (b.properties.col ?? (bCol + 1)));
       bRow = b.properties.row = Math.max(1, (b.properties.row ?? (bRow + 1)));
@@ -268,6 +385,9 @@ class WLBlock_Workspace {
       render.Resize(box.w, box.h);
       render.svg.move(box.x + startx, box.y + starty);
       this.svgGrid.add(render.svg);
+
+      this.tableStructure.blocks[bCol - 1] = this.tableStructure.blocks[bCol] ?? [];
+      this.tableStructure.blocks[bCol - 1][bRow - 1] = render;
     }
 
     return;
@@ -327,7 +447,11 @@ class WLBlock_Workspace {
     }
   }
 
-  
+  Render() {
+    this.UpdateTableStructure();
+    this.RenderGrid();
+    this.RenderWiring();
+  }
 
 }
 
