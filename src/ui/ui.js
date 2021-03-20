@@ -77,6 +77,9 @@ class UIEditor_WLBlock extends UIEditor {
         this.target.AddBlock(newBlockInstance);
 
         return UI_Feedback.Success(`Added block ${arg_name}.`, newBlockInstance);
+      },
+      (args, result) => {
+        return this.$remove.Do({ guid: result.payload.guid });
       }
     ),
 
@@ -101,6 +104,9 @@ class UIEditor_WLBlock extends UIEditor {
         this.target.AddPlug(newPlugInstance);
 
         return UI_Feedback.Success(`Added plug ${arg_name}.`, newPlugInstance);
+      },
+      (args, result) => {
+        return this.$remove.Do({ guid: result.payload.guid });
       }
     )
   };
@@ -181,6 +187,9 @@ class UIEditor_WLBlock extends UIEditor {
       foundBlock.UpdateProperties(arg_pos);
 
       return UI_Feedback.Success(`Entity moved.`, foundBlock);
+    },
+    (args, result) => {
+      return this.$move.Do({ src: args.pos, pos: args.src });
     }
   );
 }
@@ -192,6 +201,7 @@ class UI_Feedback {
     this.success = false;
     this.message = null;
     this.payload = null;
+
   }
 
   static Success(message, payload) {
@@ -211,15 +221,44 @@ class UI_Feedback {
   }
 }
 
-class UI_CommandGroup {
-
-}
-
 class UI_Command {
-  constructor(description, args, callback) {
+  constructor(description, args, callback, undoCallback) {
     this.description = description;
     this.args = args;
     this.callback = callback;
+    this.undoCallback = undoCallback;
+  }
+
+  Do(args) { return this.callback(args); }
+  Undo(args, result) { return this.undoCallback(args, result); }
+}
+
+class UI_Action {
+  constructor(raw, command, args) {
+    this.raw = raw;
+    this.command = command;
+    this.args = args;
+    this.result = null;
+  }
+
+  ToString() {
+    return this.raw;
+    let commandArgs = [];
+    for (var argIdx in this.command.args) {
+      let arg = this.command.args[argIdx];
+      commandArgs.push(this.args[arg.name]);
+    }
+    return `${this.command.constructor.name} ${commandArgs.join(' ')}`;
+  }
+  FromCommand(editor, cmd) {}
+
+  ExecuteDo(target) {
+    this.result = this.command.Do(this.args);
+    return this.result;
+  }
+
+  ExecuteUndo(target) {
+    return this.command.Undo(this.args, this.result);
   }
 }
 
@@ -236,6 +275,9 @@ class UI {
 
     this.activeEditor = new UIEditor.WLBlock(this, this.main);
     this.editors = [this.activeEditor];
+
+    this.history = [];
+    this.redoHistory = [];
   }
 
   SetToolbox(toolbox) {
@@ -278,12 +320,15 @@ class UI {
           call_args[arg.name] = cmd_parts[+argIdx] ?? null;
       }
 
-      let fn_ret = fn.callback.call(this, call_args);
+      let newAction = new UI_Action(cmd, fn, call_args);
+
+      let fn_ret = newAction.ExecuteDo(this);
       if (!(fn_ret instanceof UI_Feedback)) console.error("Wrong feedback from command!");
 
-      if (fn_ret.success)
+      if (fn_ret.success) {
+        this.history.push(newAction);
         console.log(`OK - ${fn_ret.message}`, fn_ret.payload);
-      else
+      } else
         console.error(`ERROR - ${fn_ret.message}`);
     }
   }
@@ -296,6 +341,30 @@ class UI {
       this.activeEditor = newEditor;
 
     return newEditor;
+  }
+
+  Save(filename) {
+    let saveContent = this.history.map(a => a.ToString()).join('\n');
+    console.log(saveContent);
+    //Helpers.download(filename, saveContent);
+  }
+
+  Load(content) {
+    console.log(content);
+  }
+
+  Undo() {
+    if (this.history.length <= 0) { console.error('Undo stack empty.'); return; }
+    let undoAction = this.history.pop();
+    this.redoHistory.push(undoAction);
+    undoAction.ExecuteUndo();
+  }
+
+  Redo() {
+    if (this.redoHistory.length <= 0) { console.error('Redo stack empty.'); return; }
+    let redoAction = this.redoHistory.pop();
+    this.history.push(redoAction);
+    redoAction.ExecuteDo();
   }
 
   /* ##### Commands ##### */
@@ -315,7 +384,15 @@ class UI {
       { name: 'filename', desc: 'Filename of the source file.' }
     ],
     (args) => {
+      let element = document.getElementById('openfile');
+      element.click();
 
+      element.onchange = function() {
+        var promise = Promise.resolve();
+        console.log(element.files);
+        promise.then(()=> Helpers.pFileReader(element.files[0]));
+        promise.then(() => console.log('all done...'));
+      }
     }
   );
 

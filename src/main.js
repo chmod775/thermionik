@@ -298,7 +298,8 @@ ui.Execute('connect PG_2.value C1.reset');
 ui.Execute('connect B1.out C1.inc');
 ui.Execute('connect C1.actValue PP_1.value_0');
 
-ui.Execute("MOVE B1 D2");
+ui.Execute("MOVE B1 B3");
+ui.Execute("MOVE B3 D2");
 
 /*
 ui.Execute("ADD BLOCK Block_And C3 {size:10}");

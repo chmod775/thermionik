@@ -56,6 +56,42 @@ class Helpers {
     document.body.removeChild(element);
   }
 
+  static readUploadedFileAsText(inputFile) {
+    const temporaryFileReader = new FileReader();
+  
+    return new Promise((resolve, reject) => {
+      temporaryFileReader.onerror = () => {
+        temporaryFileReader.abort();
+        reject(new DOMException("Problem parsing input file."));
+      };
+  
+      temporaryFileReader.onload = () => {
+        resolve(temporaryFileReader.result);
+      };
+      temporaryFileReader.readAsText(inputFile);
+    });
+  };
+
+  async handleUpload (event) {
+    const file = event.target.files[0];
+    console.log(file);
+
+    try {
+      const fileContents = await Helpers.readUploadedFileAsText(file)  
+      ui.Load(fileContents)
+    } catch (e) {
+      console.error(e.message);
+    }
+  }
+
+  static pFileReader(file){
+    return new Promise((resolve, reject) => {
+      var fr = new FileReader();  
+      fr.onload = resolve;  // CHANGE to whatever function you want which would eventually call resolve
+      fr.readAsDataURL(file);
+    });
+  }
+
   static posToRef(pos) {
     return Helpers.numToSSColumn(pos.col ?? 1) + (pos.row ?? 1);
   }
