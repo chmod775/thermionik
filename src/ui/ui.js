@@ -3,11 +3,140 @@ class UIEditor {
     this.ui = ui;
     this.target = target;
   }
+
+  $create = new UI_Command(
+    'Create a new block.',
+    [
+      { name: 'type', desc: 'Type of new block:\n\tC - C Block\n\tWL - Wiring language\n\tCL - Cycle language' },
+      { name: 'name', desc: 'Name of the new block' }
+    ],
+    (args) => {
+      let arg_type = args.type.toUpperCase();
+      let arg_name = args.name;
+
+      let blockTypes = {
+        C: CBlock,
+        WL: WLBlock,
+        CL: CLBlock
+      };
+
+      let blockClass = blockTypes[arg_type];
+      if (!blockClass) { return UI_Feedback.Error(`Type of new block ${arg_type} not supported at the moment.`); }
+
+      let newBlockInstance = new blockClass(arg_name);
+
+      this.ui.CreateEditor(newBlockInstance, true);
+
+      return UI_Feedback.Success(`${arg_type} Block named ${arg_name} created.`, newBlockInstance);
+    }
+  );
+
+  $board = new UI_Command(
+    'Set type of board.',
+    () => {
+      return [
+        { name: 'name', desc: `Available boards: ${this.ui.toolbox.boards.map(t => '\t- ' + t.name).join("\n")}`}
+      ];
+    },
+    (args) => {
+      let arg_name = args.name.toUpperCase();
+
+      let foundBoard = this.ui.toolbox.boards.find(b => b.name.toUpperCase() == arg_name);
+      if (!foundBoard) { return UI_Feedback.Error(`Board ${arg_name} not supported at the moment.`); }
+
+      this.ui.board = foundBoard.Create(this.ui.main);
+
+      return UI_Feedback.Success("Board created.", this.ui.board);
+    }
+  );
+
+  /* ### EDITORS ### */
+  $editor = {
+    $edit: new UI_Command(
+      'Edit a block.',
+      () => {
+        return [
+          { name: 'name', desc: `Name of the block to edit. (Ex. ${this.ui.toolbox.tubes.slice(0, 3).map(t => '\t- ' + t.name).join(", ")}...)`}
+        ];
+      },
+      (args) => {
+        let arg_name = args.name.toUpperCase();
+        
+        let foundBlock = this.ui.toolbox.tubes.find(b => b.name.toUpperCase() == arg_name);
+        if (!foundBlock) { return UI_Feedback.Error(`Block ${arg_name} does not exists.`); }
+
+        let foundEditor = this.ui.editors.find(e => e.target == foundBlock);
+        if (foundEditor) { return UI_Feedback.Error(`Block ${arg_name} already edited.`); }
+
+        let newBlockInstance = foundBlock.Create();
+
+        this.ui.CreateEditor(newBlockInstance, true);
+
+        return UI_Feedback.Success(`Edited block ${arg_name} in editor slot ${this.ui.editors.length - 1}.`, this.ui.activeEditor);
+      }
+    ),
+
+    $save: new UI_Command(
+      'Save changes of actual editor.',
+      [],
+      (args) => {
+        if (this.ui.editors.length <= 1) return UI_Feedback.Error(`Cannot save main.`);
+
+        let block = this.ui.activeEditor.target;
+        let blockEvalCode = block.$GenerateClass();
+
+        let ret = eval(blockEvalCode);
+
+        let foundTube = this.ui.toolbox.tubes.findIndex(t => t.name == ret.name);
+        if (foundTube < 0)
+          this.ui.toolbox.tubes.push(ret);
+        else
+          this.ui.toolbox.tubes[foundTube] = ret;
+        
+        this.ui.editors.pop();
+        this.ui.activeEditor = this.ui.editors[this.ui.editors.length - 1];
+
+        return UI_Feedback.Success(`Block saved with success.`, this.ui.activeEditor);
+      }
+    ),
+
+    $cancel: new UI_Command(
+      'Cancel changes of actual editor.',
+      [
+        { name: 'confirm', desc: 'Please confirm with Y or YES' }
+      ],
+      (args) => {
+        let arg_confirm = (args.confirm ?? '').toUpperCase();
+
+        if (arg_confirm[0] != 'Y') return UI_Feedback.Error(`Please confirm with Y or YES as argument.`);
+
+        if (this.ui.editors.length <= 1) return UI_Feedback.Error(`Cannot close all editors.`);
+
+        return UI_Feedback.Success(`Editor closed.`, this.ui.activeEditor);
+      }
+    ),
+
+    $switch: new UI_Command(
+      'Switch to a opened editor.',
+      [
+        { name: 'index', desc: 'Index of the editor to activate' }
+      ],
+      (args) => {
+        let arg_index = +args.index;
+
+        if (arg_index >= this.ui.editors.length) { return UI_Feedback.Error(`Editor with index ${arg_index} not opened.`); }
+
+        this.ui.activeEditor = this.ui.editors[arg_index];
+
+        return UI_Feedback.Success(`Editor ${arg_index} activated.`, this.ui.activeEditor);
+      }
+    )
+  };
 }
 
 class UIEditor_CBlock extends UIEditor {
   $pin = {
-    add: new UI_Command(
+    $add: new UI_Command(
       'Add a new pin.',
       [
         { name: 'direction', desc: 'Direction of the pin. I- Input, O- Output' },
@@ -32,7 +161,7 @@ class UIEditor_CBlock extends UIEditor {
       }
     ),
 
-    remove: new UI_Command(
+    $remove: new UI_Command(
       'Remove existing pin by name.',
       [
         { name: 'name', desc: 'Name of the pin to remove.' }
@@ -55,7 +184,7 @@ UIEditor.CBlock = UIEditor_CBlock;
 
 class UIEditor_WLBlock extends UIEditor {
   $add = {
-    block: new UI_Command(
+    $block: new UI_Command(
       'Add a block.',
       [
         { name: 'name', desc: 'Name of the block to add.' },
@@ -83,7 +212,7 @@ class UIEditor_WLBlock extends UIEditor {
       }
     ),
 
-    plug: new UI_Command(
+    $plug: new UI_Command(
       'Add a plug',
       [
         { name: 'name', desc: 'Name of the block to add.' },
@@ -165,6 +294,59 @@ class UIEditor_WLBlock extends UIEditor {
         return UI_Feedback.Success(`Connected pins.`, retWire);
       else
         return UI_Feedback.Error(`Error connecting pins.`, pinsToConnect);
+    },
+    (args, result) => {
+      this.$disconnect.Do(args);
+    }
+  );
+
+  $disconnect = new UI_Command(
+    'Disconnect one or more pins.',
+    [
+      { name: 'pins', desc: 'List of pins to connect', variable: true }
+    ],
+    (args) => {
+      let arg_pins = args.pins;
+
+      let pinsToDisconnect = [];
+
+      for (var pId of arg_pins) {
+        let pId_parts = pId.split('.');
+        if (pId_parts.length != 2) { return UI_Feedback.Error(`Wrong format for pin ID ${pId}.`); }
+        let pBlockGUID = pId_parts[0].toLowerCase();
+        let pName = pId_parts[1];
+
+        let foundPlug = this.target.plug.plates.find(b => b.guid.toLowerCase() == pBlockGUID) ?? this.target.plug.grids.find(b => b.guid.toLowerCase() == pBlockGUID);
+        let foundBlock = this.target.blocks.find(b => b.guid.toLowerCase() == pBlockGUID) ?? foundPlug;
+        if (!foundBlock) { return UI_Feedback.Error(`Pin block with GUID ${pBlockGUID} not found.`); } 
+
+        let foundBlockPin = foundBlock.pin[pName];
+        if (!foundBlockPin) { return UI_Feedback.Error(`Pin with name ${pName} not found in block with GUID ${pBlockGUID}.`); } 
+
+        pinsToDisconnect.push(foundBlockPin);
+      }
+
+      let retConnections = this.target.DisconnectWire(pinsToDisconnect);
+
+      if (retConnections)
+        return UI_Feedback.Success(`Connected pins.`, retConnections);
+      else
+        return UI_Feedback.Error(`Error connecting pins.`, pinsToDisconnect);
+    },
+    (args, result) => {
+      let connections = result.payload;
+
+      for (var c of connections) {
+        let refPin = c.refPin;
+        let pins = c.pins;
+  
+        var pinsToConnect = refPin ? [refPin] : [];
+        pinsToConnect = pinsToConnect.concat(pins);
+
+        var argPinsToConnect = pinsToConnect.map(p => `${p.block.guid}.${p.name}`);
+
+        this.$connect.Do({ pins: argPinsToConnect });
+      }
     }
   );
 
@@ -223,6 +405,7 @@ class UI_Feedback {
 
 class UI_Command {
   constructor(description, args, callback, undoCallback) {
+    this._path = [];
     this.description = description;
     this.args = args;
     this.callback = callback;
@@ -242,13 +425,14 @@ class UI_Action {
   }
 
   ToString() {
-    return this.raw;
     let commandArgs = [];
-    for (var argIdx in this.command.args) {
-      let arg = this.command.args[argIdx];
+    let fn_args = (this.command.args instanceof Function) ? this.command.args() : this.command.args;
+    for (var argIdx in fn_args) {
+      let arg = fn_args[argIdx];
       commandArgs.push(this.args[arg.name]);
     }
-    return `${this.command.constructor.name} ${commandArgs.join(' ')}`;
+    let commandPath = this.command._path.map(i => i.toUpperCase()).join(' ');
+    return `${commandPath} ${commandArgs.join(' ')}`;
   }
   FromCommand(editor, cmd) {}
 
@@ -296,21 +480,9 @@ class UI {
     let cmd_parts = cmd.split(' ');
 
     if (cmd_parts.length > 0) {
-      var fn_name = cmd_parts.shift();
+      let container = this.SearchCommand(this.activeEditor, cmd_parts);
 
-      var fn = this['$' + fn_name.toLowerCase()];
-      if (!fn) {
-        fn = this.activeEditor['$' + fn_name.toLowerCase()];
-        if (!fn) console.error(`Command ${fn_name} not found!`);
-      }
-
-      if (!(fn instanceof UI_Command)) {
-        fn_name = cmd_parts.shift();
-        fn = fn[fn_name.toLowerCase()];
-        if (!fn) console.error(`Category ${fn_name} not found!`);
-      }
-
-      let fn_args = (fn.args instanceof Function) ? fn.args() : fn.args;
+      let fn_args = (container.args instanceof Function) ? container.args() : container.args;
       let call_args = {};
       for (var argIdx in fn_args) {
         let arg = fn_args[argIdx];
@@ -320,7 +492,7 @@ class UI {
           call_args[arg.name] = cmd_parts[+argIdx] ?? null;
       }
 
-      let newAction = new UI_Action(cmd, fn, call_args);
+      let newAction = new UI_Action(cmd, container, call_args);
 
       let fn_ret = newAction.ExecuteDo(this);
       if (!(fn_ret instanceof UI_Feedback)) console.error("Wrong feedback from command!");
@@ -333,6 +505,21 @@ class UI {
     }
   }
 
+  SearchCommand(parent, parts) {
+    var container = parent;
+    let path = [];
+    do {
+      let commandName = parts.shift().toLowerCase();
+      path.push(commandName);
+
+      let fn_name = '$' + commandName;
+      container = container[fn_name];
+      if (!container) console.error(`Command ${fn_name} not found!`);
+    } while (!(container instanceof UI_Command));
+    container._path = path;
+    return container;
+  }
+
   CreateEditor(block, activate) {
     let newEditor = new UIEditor[block.constructor.lang()](this, block);
 
@@ -343,187 +530,28 @@ class UI {
     return newEditor;
   }
 
-  Save(filename) {
+  $Save(filename) {
     let saveContent = this.history.map(a => a.ToString()).join('\n');
     console.log(saveContent);
     //Helpers.download(filename, saveContent);
   }
 
-  Load(content) {
+  $Load(content) {
     console.log(content);
   }
 
-  Undo() {
+  $Undo() {
     if (this.history.length <= 0) { console.error('Undo stack empty.'); return; }
     let undoAction = this.history.pop();
     this.redoHistory.push(undoAction);
     undoAction.ExecuteUndo();
   }
 
-  Redo() {
+  $Redo() {
     if (this.redoHistory.length <= 0) { console.error('Redo stack empty.'); return; }
     let redoAction = this.redoHistory.pop();
     this.history.push(redoAction);
     redoAction.ExecuteDo();
   }
-
-  /* ##### Commands ##### */
-  $save = new UI_Command(
-    'Save a project.',
-    [
-      { name: 'filename', desc: 'Filename of the destination file.' }
-    ],
-    (args) => {
-
-    }
-  );
-
-  $open = new UI_Command(
-    'Open a project.',
-    [
-      { name: 'filename', desc: 'Filename of the source file.' }
-    ],
-    (args) => {
-      let element = document.getElementById('openfile');
-      element.click();
-
-      element.onchange = function() {
-        var promise = Promise.resolve();
-        console.log(element.files);
-        promise.then(()=> Helpers.pFileReader(element.files[0]));
-        promise.then(() => console.log('all done...'));
-      }
-    }
-  );
-
-  $create = new UI_Command(
-    'Create a new block.',
-    [
-      { name: 'type', desc: 'Type of new block:\n\tC - C Block\n\tWL - Wiring language\n\tCL - Cycle language' },
-      { name: 'name', desc: 'Name of the new block' }
-    ],
-    (args) => {
-      let arg_type = args.type.toUpperCase();
-      let arg_name = args.name;
-
-      let blockTypes = {
-        C: CBlock,
-        WL: WLBlock,
-        CL: CLBlock
-      };
-
-      let blockClass = blockTypes[arg_type];
-      if (!blockClass) { return UI_Feedback.Error(`Type of new block ${arg_type} not supported at the moment.`); }
-
-      let newBlockInstance = new blockClass(arg_name);
-
-      this.CreateEditor(newBlockInstance, true);
-
-      return UI_Feedback.Success(`${arg_type} Block named ${arg_name} created.`, newBlockInstance);
-    }
-  );
-
-  $board = new UI_Command(
-    'Set type of board.',
-    () => {
-      return [
-        { name: 'name', desc: `Available boards: ${this.toolbox.boards.map(t => '\t- ' + t.name).join("\n")}`}
-      ];
-    },
-    (args) => {
-      let arg_name = args.name.toUpperCase();
-
-      let foundBoard = this.toolbox.boards.find(b => b.name.toUpperCase() == arg_name);
-      if (!foundBoard) { return UI_Feedback.Error(`Board ${arg_name} not supported at the moment.`); }
-
-      this.board = foundBoard.Create(this.main);
-
-      return UI_Feedback.Success("Board created.", this.board);
-    }
-  );
-
-  /* ### EDITORS ### */
-  $editor = {
-    edit: new UI_Command(
-      'Edit a block.',
-      () => {
-        return [
-          { name: 'name', desc: `Name of the block to edit. (Ex. ${this.toolbox.tubes.slice(0, 3).map(t => '\t- ' + t.name).join(", ")}...)`}
-        ];
-      },
-      (args) => {
-        let arg_name = args.name.toUpperCase();
-        
-        let foundBlock = this.toolbox.tubes.find(b => b.name.toUpperCase() == arg_name);
-        if (!foundBlock) { return UI_Feedback.Error(`Block ${arg_name} does not exists.`); }
-
-        let foundEditor = this.editors.find(e => e.target == foundBlock);
-        if (foundEditor) { return UI_Feedback.Error(`Block ${arg_name} already edited.`); }
-
-        let newBlockInstance = foundBlock.Create();
-
-        this.CreateEditor(newBlockInstance, true);
-
-        return UI_Feedback.Success(`Edited block ${arg_name} in editor slot ${this.editors.length - 1}.`, this.activeEditor);
-      }
-    ),
-
-    save: new UI_Command(
-      'Save changes of actual editor.',
-      [],
-      (args) => {
-        if (this.editors.length <= 1) return UI_Feedback.Error(`Cannot save main.`);
-
-        let block = this.activeEditor.target;
-        let blockEvalCode = block.$GenerateClass();
-
-        let ret = eval(blockEvalCode);
-
-        let foundTube = this.toolbox.tubes.findIndex(t => t.name == ret.name);
-        if (foundTube < 0)
-          this.toolbox.tubes.push(ret);
-        else
-          this.toolbox.tubes[foundTube] = ret;
-        
-        this.editors.pop();
-        this.activeEditor = this.editors[this.editors.length - 1];
-
-        return UI_Feedback.Success(`Block saved with success.`, this.activeEditor);
-      }
-    ),
-
-    cancel: new UI_Command(
-      'Cancel changes of actual editor.',
-      [
-        { name: 'confirm', desc: 'Please confirm with Y or YES' }
-      ],
-      (args) => {
-        let arg_confirm = (args.confirm ?? '').toUpperCase();
-
-        if (arg_confirm[0] != 'Y') return UI_Feedback.Error(`Please confirm with Y or YES as argument.`);
-
-        if (this.editors.length <= 1) return UI_Feedback.Error(`Cannot close all editors.`);
-
-        return UI_Feedback.Success(`Editor closed.`, this.activeEditor);
-      }
-    ),
-
-    switch: new UI_Command(
-      'Switch to a opened editor.',
-      [
-        { name: 'index', desc: 'Index of the editor to activate' }
-      ],
-      (args) => {
-        let arg_index = +args.index;
-
-        if (arg_index >= this.editors.length) { return UI_Feedback.Error(`Editor with index ${arg_index} not opened.`); }
-
-        this.activeEditor = this.editors[arg_index];
-
-        return UI_Feedback.Success(`Editor ${arg_index} activated.`, this.activeEditor);
-      }
-    )
-  };
-
 }
 

@@ -297,13 +297,20 @@ class WLBlock_Workspace {
     for (var w of this.block.wires) {
       let platePin = w.platePin;
 
-      let platePinPos = this.CalculatePinPos(platePin);
+      if (platePin) { // Wire does have a plate, all wire must start from plate and end to grid
+        let platePinPos = this.CalculatePinPos(platePin);
 
-      for (var gridPin of w.gridPins) {
-        let gridPinPos = this.CalculatePinPos(gridPin);
-
-        console.log(platePinPos.x, platePinPos.y, gridPinPos.x, gridPinPos.y);
-        this.svgWiring.line(platePinPos.x, platePinPos.y, gridPinPos.x, gridPinPos.y).stroke({ color: 'black', width: 3, linecap: 'round'  });
+        for (var gridPin of w.gridPins) {
+          let gridPinPos = this.CalculatePinPos(gridPin);  
+          this.svgWiring.line(platePinPos.x, platePinPos.y, gridPinPos.x, gridPinPos.y).stroke({ color: 'black', width: 3, linecap: 'round'  });
+        }
+      } else { // Wire does not have a plate, connect grids together
+        let firstGridPos = this.CalculatePinPos(w.gridPins[0]);
+        for (var gIdx = 1; gIdx < w.gridPins.length; gIdx++) {
+          let gridPin = w.gridPins[gIdx];
+          let gridPinPos = this.CalculatePinPos(gridPin);  
+          this.svgWiring.line(firstGridPos.x, firstGridPos.y, gridPinPos.x, gridPinPos.y).stroke({ color: 'black', width: 3, linecap: 'round'  });
+        }
       }
     }
 

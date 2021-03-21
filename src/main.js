@@ -293,13 +293,13 @@ ui.Execute("ADD PLUG Arduino_OLEDNumber_Plug 1");
 ui.Execute("ADD BLOCK Block_OneShot B1");
 ui.Execute("ADD BLOCK Block_Counter C1");
 
-ui.Execute('connect PG_1.value B1.in');
-ui.Execute('connect PG_2.value C1.reset');
+ui.Execute('connect PG_1.value B1.in C1.reset');
+//ui.Execute('connect PG_2.value C1.reset');
 ui.Execute('connect B1.out C1.inc');
 ui.Execute('connect C1.actValue PP_1.value_0');
 
-ui.Execute("MOVE B1 B3");
-ui.Execute("MOVE B3 D2");
+//ui.Execute("MOVE B1 B3");
+//ui.Execute("MOVE B3 D2");
 
 /*
 ui.Execute("ADD BLOCK Block_And C3 {size:10}");

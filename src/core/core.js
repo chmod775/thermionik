@@ -46,23 +46,41 @@ class Wire {
     this.gridPins = [];
   }
 
-  DisconnectPin(pin) {
-    if (this.platePin == pin)
-      this.platePin = null;
+  ConnectPin(pin) {
+    if (pin.isPlate)
+      this.SetPlate(pin);
     else
+      this.ConnectGrid(pin);
+  }
+
+  DisconnectPin(pin) {
+    if (this.platePin == pin) {
+      this.platePin.DisconnectFromWire(this);
+      this.platePin = null;
+    } else
       this.DisconnectGrid(pin);
   }
 
   ReplacePin(oldPin, newPin) {
-    if (this.platePin == oldPin)
+    if (this.platePin == oldPin) {
       this.platePin = newPin;
-    else
+    } else
       this.ReplaceGrid(oldPin, newPin);
   }
 
   GetConnectedPins() {
     let ret = this.platePin ? [this.platePin] : [];
     return ret.concat(this.gridPins);
+  }
+
+  /* ##### HELPERS ##### */
+  IsEmpty() {
+    return (this.platePin == null) && (this.gridPins.length == 0);
+  }
+  IsUseless() {
+    return ((this.platePin == null) && (this.gridPins.length <= 1))
+    ||
+    ((this.platePin != null) && (this.gridPins.length == 0));
   }
 }
 

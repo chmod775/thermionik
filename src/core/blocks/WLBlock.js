@@ -139,8 +139,84 @@ class WLBlock extends CBlock {
   }
 
   /* ### Wirings ### */
+  /*
   CleanEmptyWires() {
-    this.wires = this.wires.filter(w => (w.platePin != null) || (w.gridPins.length > 0));
+    this.wires = this.wires.filter(w => 
+      ((w.platePin == null) && (w.gridPins.length > 1))
+      ||
+      ((w.platePin != null) && (w.gridPins.length > 0))
+    );
+  }
+  */
+
+  DisconnectWire(items) {
+    // Get pins from items (direct Pin or Plugs)
+    let pins = [];
+    for (var i of items) {
+      if (i instanceof Pin) pins.push(i);
+      if (i instanceof WLInternalSocket) {
+        if (i.IsPlatePlug())
+          pins.push(i.pin.grids[0]);
+        else
+          pins.push(i.pin.plates[0]);
+      }
+    }
+
+    let removedConnections = [];
+
+    // Disconnect wires
+    for (var p of pins) {
+      let wire = p.wire;
+      if (wire) {
+        var connection = removedConnections.find(c => c.wire == wire);
+        if (!connection) {
+          connection = {
+            wire: wire,
+            pins: []
+          };
+          removedConnections.push(connection);
+        }
+
+        connection.pins.push(p);
+
+        wire.DisconnectPin(p);
+      }
+    }
+
+    // Find 'useless' wires
+    let uselessWires = this.wires.filter(w => w.IsUseless());
+
+    for (var w of uselessWires) {
+      var connection = removedConnections.find(c => c.wire == w);
+      if (!connection) {
+        connection = {
+          wire: w,
+          refPin: null,
+          pins: []
+        };
+        removedConnections.push(connection);
+      }
+
+      for (var p of w.GetConnectedPins()) {
+        connection.pins.push(p);
+        w.DisconnectPin(p);
+      }
+    }
+
+    // Remove useless (and now empty) wires from list
+    this.wires = this.wires.filter(w => !w.IsEmpty());
+
+    // Find reference pins of 'removedConnections'
+    for (var c of removedConnections) {
+      if (c.wire.IsEmpty())
+        c.refPin = null;
+      else
+        c.refPin = c.wire.GetConnectedPins()[0];
+      
+      delete c.wire;
+    }
+
+    return removedConnections;
   }
 
   ConnectWire(items) {
