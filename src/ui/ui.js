@@ -252,13 +252,37 @@ class UIEditor_WLBlock extends UIEditor {
       let foundPlug = this.target.plug.plates.find(b => b.guid.toLowerCase() == arg_guid) ?? this.target.plug.grids.find(b => b.guid.toLowerCase() == arg_guid);
       if (!foundBlock && !foundPlug) { return UI_Feedback.Error(`Entity with GUID ${arg_guid} not found.`); } 
 
+      var ret = null;
       if (foundBlock)
-        this.target.RemoveBlock(foundBlock);
+        ret = this.target.RemoveBlock(foundBlock);
 
       if (foundPlug)
-        this.target.RemovePlug(foundPlug);
+        ret = this.target.RemovePlug(foundPlug);
 
-      return UI_Feedback.Success(`Removed entity ${arg_guid}.`, foundBlock ?? foundPlug);
+      return UI_Feedback.Success(`Removed entity ${arg_guid}.`, ret);
+    },
+    (args, result) => {
+      let res_isEntityPlug = result.payload.plug ? true : false;
+      let res_entity = res_isEntityPlug ? result.payload.plug : result.payload.block;
+      let res_connections = result.payload.connections;
+
+      let arg_configs = Helpers.JSONClean(res_entity.configs);
+      let arg_pos = Helpers.posToRef(res_entity.properties);
+
+      if (res_isEntityPlug) {
+
+      } else {
+        let args = { name: res_entity.constructor.name, pos: arg_pos, configs: arg_configs };
+        console.log(args);
+        let do_ret = this.$add.$block.Do(args);
+        if (!do_ret.success) { return do_ret; }
+      }
+
+      let conn_ret = this.reconnectConnections(res_connections);
+      if (!conn_ret.success) { return conn_ret; }
+
+      console.log(res_entity, res_connections);
+      return UI_Feedback.Success(`Undoed remove block.`, null);
     }
   );
 
@@ -296,7 +320,7 @@ class UIEditor_WLBlock extends UIEditor {
         return UI_Feedback.Error(`Error connecting pins.`, pinsToConnect);
     },
     (args, result) => {
-      this.$disconnect.Do(args);
+      return this.$disconnect.Do(args);
     }
   );
 
@@ -335,18 +359,7 @@ class UIEditor_WLBlock extends UIEditor {
     },
     (args, result) => {
       let connections = result.payload;
-
-      for (var c of connections) {
-        let refPin = c.refPin;
-        let pins = c.pins;
-  
-        var pinsToConnect = refPin ? [refPin] : [];
-        pinsToConnect = pinsToConnect.concat(pins);
-
-        var argPinsToConnect = pinsToConnect.map(p => `${p.block.guid}.${p.name}`);
-
-        this.$connect.Do({ pins: argPinsToConnect });
-      }
+      return this.reconnectConnections(connections);
     }
   );
 
@@ -374,6 +387,24 @@ class UIEditor_WLBlock extends UIEditor {
       return this.$move.Do({ src: args.pos, pos: args.src });
     }
   );
+
+  /* ##### HELPERS ##### */
+  reconnectConnections(connections) {
+    for (var c of connections) {
+      let refPin = c.refPin;
+      let pins = c.pins;
+
+      var pinsToConnect = refPin ? [refPin] : [];
+      pinsToConnect = pinsToConnect.concat(pins);
+
+      var argPinsToConnect = pinsToConnect;
+
+      let do_ret = this.$connect.Do({ pins: argPinsToConnect });
+      if (!do_ret.success) { return do_ret; }
+    }
+
+    return UI_Feedback.Success(`Re-Connected pins.`, connections);
+  }
 }
 UIEditor.WLBlock = UIEditor_WLBlock;
 
@@ -544,14 +575,29 @@ class UI {
     if (this.history.length <= 0) { console.error('Undo stack empty.'); return; }
     let undoAction = this.history.pop();
     this.redoHistory.push(undoAction);
-    undoAction.ExecuteUndo();
+
+    let ret = undoAction.ExecuteUndo();
+    if (!(ret instanceof UI_Feedback)) console.error("Wrong feedback from command!");
+
+    if (ret.success)
+      console.log(`OK - ${ret.message}`, ret.payload);
+    else
+      console.error(`ERROR - ${ret.message}`);
   }
 
   $Redo() {
     if (this.redoHistory.length <= 0) { console.error('Redo stack empty.'); return; }
     let redoAction = this.redoHistory.pop();
     this.history.push(redoAction);
-    redoAction.ExecuteDo();
+
+    let ret = redoAction.ExecuteDo();
+    if (!(ret instanceof UI_Feedback)) console.error("Wrong feedback from command!");
+
+    if (ret.success)
+      console.log(`OK - ${ret.message}`, ret.payload);
+    else
+      console.error(`ERROR - ${ret.message}`);
+
   }
 }
 

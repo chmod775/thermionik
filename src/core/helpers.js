@@ -132,6 +132,10 @@ class Helpers {
   static SSColumToNum(ss) {
 
   }
+
+  static JSONClean(obj) {
+    return JSON.stringify(obj).replace(/"(\w+)"\s*:/g, '$1:');
+  }
 }
 /*
 var json = typeof JSON !== 'undefined' ? JSON : require('jsonify');

@@ -285,7 +285,7 @@ class CBlock extends Block {
 
       // Data
       let genDataContent = ((this.Data instanceof Function) ? this.Data() : this.Data) ?? [];
-      let genDataOBJ = JSON.stringify(genDataContent).replace(/"(\w+)"\s*:/g, '$1:');
+      let genDataOBJ = Helpers.JSONClean(genDataContent);
       let genDataCode = generator.GenerateFunction(
         'Data',
         '',
@@ -295,7 +295,7 @@ class CBlock extends Block {
 
       // Default Settings
       let genDefSettingsContent = this.constructor.$DefaultSettings() ?? {};
-      let genDefSettingsOBJ = JSON.stringify(genDefSettingsContent).replace(/"(\w+)"\s*:/g, '$1:');
+      let genDefSettingsOBJ = Helpers.JSONClean(genDefSettingsContent);
       let genDefSettingsCode = generator.GenerateFunction(
         '$DefaultSettings',
         'static',
@@ -305,7 +305,7 @@ class CBlock extends Block {
 
       // Default Configs
       let genDefConfigsContent = this.constructor.$DefaultConfigs() ?? {};
-      let genDefConfigsOBJ = JSON.stringify(genDefConfigsContent).replace(/"(\w+)"\s*:/g, '$1:');
+      let genDefConfigsOBJ = Helpers.JSONClean(genDefConfigsContent);
       let genDefConfigsCode = generator.GenerateFunction(
         '$DefaultConfigs',
         'static',

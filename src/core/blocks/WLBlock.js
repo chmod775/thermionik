@@ -83,10 +83,12 @@ class WLBlock extends CBlock {
       return;
     }
 
-    block.Destroy();
+    let connections = this.DisconnectWire(block.pin.all);
 
+    block.Destroy();
     this.blocks = this.blocks.filter(t => !t.IsEqual(block));
-    this.CleanEmptyWires();
+
+    return { block: block, connections: connections };
   }
 
   /* ### Plugs management ### */
@@ -136,6 +138,11 @@ class WLBlock extends CBlock {
     // Plug is also a Socket
     if (plug instanceof CSocket)
       this.RemovePin(plug.$ExternalPins());
+
+    let connections = this.DisconnectWire(plug.pin.all);
+    plug.Destroy();
+
+    return { plug: plug, connections: connections };
   }
 
   /* ### Wirings ### */
@@ -210,9 +217,13 @@ class WLBlock extends CBlock {
     for (var c of removedConnections) {
       if (c.wire.IsEmpty())
         c.refPin = null;
-      else
-        c.refPin = c.wire.GetConnectedPins()[0];
+      else {
+        let refPin = c.wire.GetConnectedPins()[0];
+        c.refPin = `${refPin.block.guid}.${refPin.name}`;
+      }
       
+      c.pins = c.pins.map(p => `${p.block.guid}.${p.name}`);
+
       delete c.wire;
     }
 
@@ -446,7 +457,7 @@ class WLBlock extends CBlock {
     let genAddPlugs = [];
 
     for (var pg of this.plug.grids) {
-      let pgConfigs = JSON.stringify(pg.configs).replace(/"(\w+)"\s*:/g, '$1:');
+      let pgConfigs = Helpers.JSONClean(pg.configs);
       let genPlugCreatorCode = generator.GenerateConst(
         pg.guid,
         '',
@@ -460,7 +471,7 @@ class WLBlock extends CBlock {
     }
 
     for (var pp of this.plug.plates) {
-      let ppConfigs = JSON.stringify(pp.configs).replace(/"(\w+)"\s*:/g, '$1:');
+      let ppConfigs = Helpers.JSONClean(pp.configs);
       let genPlugCreatorCode = generator.GenerateConst(
         pp.guid,
         '',
@@ -481,7 +492,7 @@ class WLBlock extends CBlock {
     let genInitBlocks = [];
     let genAddBlocks = [];
     for (var b of this.blocks) {
-      let bConfigs = JSON.stringify(b.configs).replace(/"(\w+)"\s*:/g, '$1:');
+      let bConfigs = Helpers.JSONClean(b.configs);
       let genBlockCreatorCode = generator.GenerateConst(
         b.guid,
         '',
@@ -532,7 +543,7 @@ class WLBlock extends CBlock {
 
     // Data
     let genDataContent = ((this.Data instanceof Function) ? this.Data() : this.Data) ?? [];
-    let genDataOBJ = JSON.stringify(genDataContent).replace(/"(\w+)"\s*:/g, '$1:');
+    let genDataOBJ = Helpers.JSONClean(genDataContent);
     let genDataCode = generator.GenerateFunction(
       'Data',
       '',
@@ -542,7 +553,7 @@ class WLBlock extends CBlock {
 
     // Default Settings
     let genDefSettingsContent = this.constructor.$DefaultSettings() ?? {};
-    let genDefSettingsOBJ = JSON.stringify(genDefSettingsContent).replace(/"(\w+)"\s*:/g, '$1:');
+    let genDefSettingsOBJ = Helpers.JSONClean(genDefSettingsContent);
     let genDefSettingsCode = generator.GenerateFunction(
       '$DefaultSettings',
       'static',
@@ -552,7 +563,7 @@ class WLBlock extends CBlock {
 
     // Default Configs
     let genDefConfigsContent = this.constructor.$DefaultConfigs() ?? {};
-    let genDefConfigsOBJ = JSON.stringify(genDefConfigsContent).replace(/"(\w+)"\s*:/g, '$1:');
+    let genDefConfigsOBJ = Helpers.JSONClean(genDefConfigsContent);
     let genDefConfigsCode = generator.GenerateFunction(
       '$DefaultConfigs',
       'static',
