@@ -47,7 +47,7 @@ class Block_Counter extends CBlock {
       ]
     );
 
-    this.Datdependenciesa = [{ name: 'value', type: 'int' }];
+    this.Data = [{ name: 'value', type: 'int' }];
 
     this.InitCode = null;
 
@@ -168,7 +168,7 @@ class Main extends WLBlock {
 
     // Blocks
     let b7 = Block_Not.Create();
-    let bb = Dispenser.Create();
+    //let bb = Dispenser.Create();
 
     this.AddBlock(b7);
 
@@ -259,6 +259,13 @@ class Dispenser extends CLBlock {
 
 let b6 = Block_WL.Create();
 let b7 = Dispenser.Create();
+
+let p = Arduino_DigitalInput_Plug.Create({ pin: 3 });
+b7.steps[4].block.AddPlug(p);
+b7.steps[4].block.ConnectWire([
+  p.pin.plate.value,
+  b7.steps[4].block.plug.Double
+]);
 
 let mainBlock = Main.Create();
 let mainBoard = ArduinoUno_Board.Create(mainBlock);

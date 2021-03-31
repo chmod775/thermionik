@@ -203,17 +203,17 @@ class Block {
 
   /* ### Getters ### */
   GetSource() {
-    if (this.sourceCache) {
-      console.log("cached", this);
-      return this.sourceCache;
-    }
-    console.log("generate", this);
+    //if (this.sourceCache) {
+    //  console.log("cached", this);
+    //  return this.sourceCache;
+    //}
+    //console.log("generate", this);
     this.sourceCache = this.$GenerateSource();
     return this.sourceCache;
   }
 
   GetClass() {
-    if (this.classCache) return this.classCache;
+    //if (this.classCache) return this.classCache;
     this.classCache = this.$GenerateClass();
     return this.classCache;
   }

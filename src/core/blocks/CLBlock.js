@@ -15,11 +15,14 @@ class CLSequence {
   }
 
   GetSteps() { console.error("GetSteps NOT IMPLEMENTED."); return null; }
+
+  ConnectWith(parentStep) { console.error("ConnectWith NOT IMPLEMENTED."); return null; }
 }
 
 class CLSequence_Steps extends CLSequence {
   constructor(items) {
     super();
+    this.items = [];
     this.SetItems(items);
   }
 
@@ -40,11 +43,31 @@ class CLSequence_Steps extends CLSequence {
     }
     return ret;
   }
+
+  ConnectWith(container, parentStep) {
+    for (var i of this.items) {
+      if (i instanceof CLStep) {
+        if (parentStep) {
+          container.ConnectWire([
+            parentStep.block.pin.Done,
+            i.block.pin.Activate,
+          ]);
+        } else {
+          parentStep = i;
+        }
+      }
+
+      if (i instanceof CLSequence) {
+        parentStep = i.ConnectWith(container, parentStep);
+      }
+    }
+  }
 }
 
 class CLSequence_Parallel extends CLSequence {
   constructor(sequences) {
     super();
+    this.sequences = [];
     this.SetSequences(sequences);
   }
 
@@ -64,11 +87,26 @@ class CLSequence_Parallel extends CLSequence {
       ret = ret.concat(s.GetSteps());
     return ret;
   }
+
+  ConnectWith(container, parentStep) {
+    let ret = [];
+    let oldParentStep = parentStep;
+    for (var s of this.sequences) {
+      let parent = s.ConnectWith(oldParentStep);
+      if (!parent instanceof CLStep) { console.error("[CLSequence_Parallel] ConnectWith sequence not correct."); return null; }
+      ret.push(parent);
+    }
+    return ret;
+  }
 }
 
 class CLSequence_Conditional extends CLSequence {
   constructor(parentStep, structure) {
     super();
+
+    this.parentStep = null;
+    this.structure = {};
+
     this.SetParentStep(parentStep);
     this.SetStructure(structure);
   }
@@ -139,12 +177,18 @@ class CLStep {
 
   UpdatePlugs() {
     let p_defGrid = StepDefaultGridSocket.Create();
+    let p_defPlate = StepDefaultPlateSocket.Create({ exits: this.customExitPlates });
 
     let plugs = [
       p_defGrid
     ]
+    .concat(this.customGrids.map(p => GridSocket.Create({ id: p, type: 'bool', init: 'false'})))
     .concat(this.customExitPlates.map(p => PlateSocket.Create({ id: p, type: 'bool', init: 'false'})))
-    .concat(this.customGrids.map(p => GridSocket.Create({ id: p, type: 'bool', init: 'false'})));
+    .concat(
+      [
+        p_defPlate
+      ]
+    );
 
     this.block.AddPlug(plugs);
   }
@@ -163,6 +207,7 @@ class CLStep {
   static CreateDefault(id) {
     let blockIstance = new WLBlock(`Step__${id}`);
     blockIstance.Data = [{ name: 'active', type: 'bool' }];
+
     let ret = new CLStep(id, blockIstance);
     ret.SetExitPlates(['Done']);
 
@@ -180,17 +225,22 @@ class CLBlock extends WLBlock {
 
   constructor(name) {
     super(name);
+
+    this.sequence = null;
   }
 
   UpdateSteps() {
-    if (this.sequence)
-      this.steps = this.sequence.GetSteps();
+    if (!this.sequence) return;
+
+    this.steps = this.sequence.GetSteps();
 
     this.blocks = [];
     for (var s of this.steps) {
       s.SetOwner(this);
       this.AddBlock(s.block);
     }
+
+    this.sequence.ConnectWith(this, null);
   }
 
   SetSequence(sequence) {

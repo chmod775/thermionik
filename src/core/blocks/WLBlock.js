@@ -259,8 +259,7 @@ class WLBlock extends CBlock {
     this.dependencies = {};
 
     this.Data = this.Data.filter(d => !d.isInstance);
-    console.log(this.Data);
-    
+
     // Generate grid sockets marshalling
     let gridSockets = this.plug.grids.filter(p => p instanceof CBlock.Socket);
     for (var pg of gridSockets) {

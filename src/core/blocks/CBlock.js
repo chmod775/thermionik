@@ -371,15 +371,35 @@ class CBlock extends Block {
 }
 
 class CSocket extends CBlock {
-  constructor(name) {
+  constructor(name, isPlate) {
     super(name, true);
+
+    this.isPlate = isPlate;
   }
 
+  IsGridPlug() { return !this.isPlate; }
+  IsPlatePlug() { return this.isPlate; }
+  IsValidPlug() { return true; }
+
   $ExternalPins() { console.error("$ExternalPins NOT IMPLEMENTED."); return null; }
+}
+
+class CSocket_Female extends CSocket {
+  constructor(name) {
+    super(name, false);
+  }
 
   $GenerateConnection(toPin) { console.error("$GenerateConnection NOT IMPLEMENTED."); return null; }
 }
 
+class CSocket_Male extends CSocket {
+  constructor(name) {
+    super(name, true);
+  }
+}
+
 CBlock.Socket = CSocket;
+CBlock.FemaleSocket = CSocket_Female;
+CBlock.MaleSocket = CSocket_Male;
 
 CBlock.Step = null;

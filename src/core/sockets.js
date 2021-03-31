@@ -1,4 +1,4 @@
-class PlateSocket extends CBlock.Socket {
+class PlateSocket extends CBlock.MaleSocket {
   constructor() {
     super("PlateSocket", true);
   }
@@ -59,7 +59,7 @@ class PlateSocket extends CBlock.Socket {
   }
 }
 
-class GridSocket extends CBlock.Socket {
+class GridSocket extends CBlock.FemaleSocket {
   constructor() {
     super("GridSocket", false);
   }
@@ -91,7 +91,44 @@ class GridSocket extends CBlock.Socket {
   }
 }
 
-class StepDefaultGridSocket extends CBlock.Socket {
+
+class StepDefaultPlateSocket extends CBlock.MaleSocket {
+  constructor() {
+    super("StepDefaultPlateSocket", true);
+  }
+
+  $Init() {
+    this.AddPin(
+      []
+    );
+  }
+
+  static $DefaultConfigs() {
+    return {
+      id: `StepDefaultPlateSocket`,
+      exits: []
+    };
+  }
+
+  $ExternalPins() {
+    return [
+      PlatePin.Create('IsActive', 'bool', 'false')
+    ];
+  }
+
+  $GenerateSource() {
+    let genCode = `
+      *IsActive = data->active;
+      if (${this.configs.exits.map(e => mainGenerator.AccessReference(e)).join(' || ')}) data->active = false;
+    `;
+
+    return {
+      source: genCode
+    };
+  }
+}
+
+class StepDefaultGridSocket extends CBlock.FemaleSocket {
   constructor() {
     super("StepDefaultGridSocket", false);
   }
@@ -109,7 +146,7 @@ class StepDefaultGridSocket extends CBlock.Socket {
   static $DefaultConfigs() {
     return {
       id: `StepDefaultGridSocket`
-    }
+    };
   }
 
   $ExternalPins() {
@@ -123,7 +160,7 @@ class StepDefaultGridSocket extends CBlock.Socket {
       bool Active = Activate;
       bool EntryShot = !data->active && Activate;
       bool ExitShot = data->active && !Activate;
-      data->active = Active;
+      if (Active) data->active = true;
     `;
 
     return {
