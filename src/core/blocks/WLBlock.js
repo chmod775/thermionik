@@ -1,63 +1,11 @@
-class WLInternalSocket extends CBlock.Socket {
-  constructor(name, isPlate) {
-    super(name, isPlate);
-  }
-}
-
-class PlateSocket extends WLInternalSocket {
-  constructor() {
-    super("PlateSocket", true);
-  }
-
-  $Init() {
-    this.AddPin(
-      [
-        GridPin.Create('ToPlate', this.configs.type, this.configs.init),
-      ]
-    );
-  }
-  
-  static $DefaultConfigs() {
-    return {
-      id: `plate_${this.guid}`,
-      type: 'bool',
-      init: 'false'
-    }
-  }
-
-  $ExternalPins() { return [ PlatePin.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
-}
-
-class GridSocket extends WLInternalSocket {
-  constructor() {
-    super("GridSocket", false);
-  }
-
-  $Init() {
-    this.AddPin(
-      [
-        PlatePin.Create('FromGrid', this.configs.type, this.configs.init)
-      ]
-    );
-  }
-
-  static $DefaultConfigs() {
-    return {
-      id: `grid_${this.guid}`,
-      type: 'bool',
-      init: 'false'
-    }
-  }
-
-  $ExternalPins() { return [ GridPin.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
-}
-
 class WLBlock extends CBlock {
   static lang() { return 'WLBlock' };
 
   constructor(name) {
     super(name, true);
   
+    this.Data = [];
+
     this.plug = { all: [], plate: {}, plates: [], grid: {}, grids: [] };
 
     this.blocks = [];
@@ -72,8 +20,10 @@ class WLBlock extends CBlock {
         this.AddBlock(b);
       return;
     }
-
+    
     this.blocks.push(block);
+
+    this.ClearCache();
   }
 
   RemoveBlock(block) {
@@ -83,12 +33,9 @@ class WLBlock extends CBlock {
       return;
     }
 
-    let connections = this.DisconnectWire(block.pin.all);
-
-    block.Destroy();
     this.blocks = this.blocks.filter(t => !t.IsEqual(block));
 
-    return { block: block, connections: connections };
+    this.ClearCache();
   }
 
   /* ### Plugs management ### */
@@ -116,6 +63,8 @@ class WLBlock extends CBlock {
     // Plug is also a Socket
     if (plug instanceof CSocket)
       this.AddPin(plug.$ExternalPins());
+
+    this.ClearCache();
   }
 
   RemovePlug(plug) {
@@ -139,10 +88,7 @@ class WLBlock extends CBlock {
     if (plug instanceof CSocket)
       this.RemovePin(plug.$ExternalPins());
 
-    let connections = this.DisconnectWire(plug.pin.all);
-    plug.Destroy();
-
-    return { plug: plug, connections: connections };
+    this.ClearCache();
   }
 
   /* ### Wirings ### */
@@ -161,7 +107,7 @@ class WLBlock extends CBlock {
     let pins = [];
     for (var i of items) {
       if (i instanceof Pin) pins.push(i);
-      if (i instanceof WLInternalSocket) {
+      if (i instanceof CBlock.Socket) {
         if (i.IsPlatePlug())
           pins.push(i.pin.grids[0]);
         else
@@ -214,18 +160,18 @@ class WLBlock extends CBlock {
     this.wires = this.wires.filter(w => !w.IsEmpty());
 
     // Find reference pins of 'removedConnections'
+    /*
     for (var c of removedConnections) {
       if (c.wire.IsEmpty())
         c.refPin = null;
-      else {
-        let refPin = c.wire.GetConnectedPins()[0];
-        c.refPin = `${refPin.block.guid}.${refPin.name}`;
-      }
-      
-      c.pins = c.pins.map(p => `${p.block.guid}.${p.name}`);
+      else
+        c.refPin = c.wire.GetConnectedPins()[0];
 
+      c.wire = null;
       delete c.wire;
     }
+    */
+    this.ClearCache();
 
     return removedConnections;
   }
@@ -235,7 +181,7 @@ class WLBlock extends CBlock {
     let pins = [];
     for (var i of items) {
       if (i instanceof Pin) pins.push(i);
-      if (i instanceof WLInternalSocket) {
+      if (i instanceof CBlock.Socket) {
         if (i.IsPlatePlug())
           pins.push(i.pin.grids[0]);
         else
@@ -297,6 +243,8 @@ class WLBlock extends CBlock {
     if (!this.wires.includes(destWire))
       this.wires.push(destWire);
 
+    this.ClearCache();
+
     // Return wire
     return destWire;
   }
@@ -309,11 +257,21 @@ class WLBlock extends CBlock {
     let genChildrensLoopCall = [];
 
     this.dependencies = {};
-    this.Data = [];
+
+    this.Data = this.Data.filter(d => !d.isInstance);
+    console.log(this.Data);
+    
+    // Generate grid sockets marshalling
+    let gridSockets = this.plug.grids.filter(p => p instanceof CBlock.Socket);
+    for (var pg of gridSockets) {
+      let pgSource = pg.GetSource();
+      if (pgSource)
+        genChildrensLoopCall.push(pgSource.source);
+    }
 
     // Create block sequence (GridPlugs - Blocks - PlatePlugs)
-    let gridPlugs = this.plug.grids.filter(p => !(p instanceof WLInternalSocket));
-    let platePlugs = this.plug.plates.filter(p => !(p instanceof WLInternalSocket));
+    let gridPlugs = this.plug.grids.filter(p => !(p instanceof CBlock.Socket));
+    let platePlugs = this.plug.plates.filter(p => !(p instanceof CBlock.Socket));
 
     let sequence = gridPlugs.concat(this.blocks.concat(platePlugs));
 
@@ -323,18 +281,17 @@ class WLBlock extends CBlock {
       let cacheKey = b.UniqueName();
 
       // Generate dependencies
-      var blockCode = this.dependencies[cacheKey];
-      if (!blockCode) {
-        blockCode = b.$GenerateSource();
-        this.dependencies[cacheKey] = blockCode;
-      }
+      var blockCode = b.GetSource();
+      this.dependencies[cacheKey] = blockCode;
 
       // Add to instance structure
       this.Data.push({
         name: b.guid,
-        type: blockCode.codes.instanceStructure.name
+        type: blockCode.codes.instanceStructure.name,
+        isInstance: true
       });
 
+      // Data instance
       let helpDataAccess = mainGenerator.AccessIndirect('data', b.guid);
       let dataIndirectReference = mainGenerator.GetReference(
         mainGenerator.AccessDirect(
@@ -400,36 +357,12 @@ class WLBlock extends CBlock {
       genChildrensLoopCall.push(genLoopCall);
     }
 
-    // Generate plate plugs marshalling
-    let internalPlates = this.plug.plates.filter(p => p instanceof PlateSocket);
-    for (var po of internalPlates) {
-      let toPlatePin = po.pin.ToPlate;
-      let pinWire = toPlatePin.wire;
-
-      var source = toPlatePin.init;
-
-      if (pinWire != null) {
-        let srcPlate = pinWire.platePin;
-        
-        if (srcPlate.block instanceof GridSocket) {
-          source = srcPlate.block.configs.id;
-        } else {
-          source = mainGenerator.AccessDirect(
-            mainGenerator.AccessDirect(
-              mainGenerator.AccessIndirect('data', srcPlate.block.guid),
-              'outputs'
-            ),
-            srcPlate.name
-          );
-        }
-      }
-
-      let genMarshalledPlate = mainGenerator.GenerateAssignment(
-        source,
-        mainGenerator.AccessReference(po.configs.id)
-      );
-
-      genChildrensLoopCall.push(genMarshalledPlate);
+    // Generate plate sockets marshalling
+    let plateSockets = this.plug.plates.filter(p => p instanceof CBlock.Socket);
+    for (var pp of plateSockets) {
+      let ppSource = pp.GetSource();
+      if (ppSource)
+        genChildrensLoopCall.push(ppSource.source);
     }
 
     // Generate init code

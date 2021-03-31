@@ -96,7 +96,7 @@ class UIEditor {
         this.ui.editors.pop();
         this.ui.activeEditor = this.ui.editors[this.ui.editors.length - 1];
 
-        return UI_Feedback.Success(`Block saved with success.`, this.ui.activeEditor);
+        return UI_Feedback.Success(`Block saved with success.`, ret);
       }
     ),
 
@@ -179,6 +179,49 @@ class UIEditor_CBlock extends UIEditor {
     )
   }
 
+  $code = {
+    $init: new UI_Command(
+      'Set init code of block.',
+      [
+        { name: 'code', desc: 'Name of the block to add.' }
+      ],
+      (args) => {
+        let oldCode = this.target.InitCode;
+        let newCode = args.code;
+        this.target.InitCode = newCode;
+        return UI_Feedback.Success(`Setted Init code with success.`, { newCode: newCode, oldCode: oldCode });
+      },
+      (args, value) => {}
+    ),
+
+    $setup: new UI_Command(
+      'Set setup code of block.',
+      [
+        { name: 'code', desc: 'Name of the block to add.' }
+      ],
+      (args) => {
+        let oldCode = this.target.SetupCode;
+        let newCode = args.code;
+        this.target.SetupCode = newCode;
+        return UI_Feedback.Success(`Setted Setup code with success.`, { newCode: newCode, oldCode: oldCode });
+      },
+      (args, value) => {}
+    ),
+
+    $loop: new UI_Command(
+      'Set loop code of block.',
+      [
+        { name: 'code', desc: 'Name of the block to add.' }
+      ],
+      (args) => {
+        let oldCode = this.target.LoopCode;
+        let newCode = args.code;
+        this.target.LoopCode = newCode;
+        return UI_Feedback.Success(`Setted Loop code with success.`, { newCode: newCode, oldCode: oldCode });
+      },
+      (args, value) => {}
+    )
+  }
 }
 UIEditor.CBlock = UIEditor_CBlock;
 
@@ -249,15 +292,23 @@ class UIEditor_WLBlock extends UIEditor {
       let arg_guid = args.guid.toLowerCase();
 
       let foundBlock = this.target.blocks.find(b => b.guid.toLowerCase() == arg_guid);
-      let foundPlug = this.target.plug.plates.find(b => b.guid.toLowerCase() == arg_guid) ?? this.target.plug.grids.find(b => b.guid.toLowerCase() == arg_guid);
+      let foundPlug = this.target.plug.all.find(b => b.guid.toLowerCase() == arg_guid);
       if (!foundBlock && !foundPlug) { return UI_Feedback.Error(`Entity with GUID ${arg_guid} not found.`); } 
 
-      var ret = null;
-      if (foundBlock)
-        ret = this.target.RemoveBlock(foundBlock);
+      let foundEntity = foundBlock ?? foundPlug;
 
-      if (foundPlug)
-        ret = this.target.RemovePlug(foundPlug);
+      let ret = {};
+      ret.connections = this.target.DisconnectWire(foundEntity.pin.all);
+
+      if (foundBlock) {
+        this.target.RemoveBlock(foundBlock);
+        ret.block = foundBlock;
+      }
+
+      if (foundPlug) {
+        this.target.RemovePlug(foundPlug);
+        ret.plug = foundPlug;
+      }
 
       return UI_Feedback.Success(`Removed entity ${arg_guid}.`, ret);
     },
@@ -266,22 +317,14 @@ class UIEditor_WLBlock extends UIEditor {
       let res_entity = res_isEntityPlug ? result.payload.plug : result.payload.block;
       let res_connections = result.payload.connections;
 
-      let arg_configs = Helpers.JSONClean(res_entity.configs);
-      let arg_pos = Helpers.posToRef(res_entity.properties);
-
-      if (res_isEntityPlug) {
-
-      } else {
-        let args = { name: res_entity.constructor.name, pos: arg_pos, configs: arg_configs };
-        console.log(args);
-        let do_ret = this.$add.$block.Do(args);
-        if (!do_ret.success) { return do_ret; }
-      }
+      if (res_isEntityPlug)
+        this.target.AddPlug(res_entity);
+      else
+        this.target.AddBlock(res_entity);
 
       let conn_ret = this.reconnectConnections(res_connections);
       if (!conn_ret.success) { return conn_ret; }
 
-      console.log(res_entity, res_connections);
       return UI_Feedback.Success(`Undoed remove block.`, null);
     }
   );
@@ -391,16 +434,25 @@ class UIEditor_WLBlock extends UIEditor {
   /* ##### HELPERS ##### */
   reconnectConnections(connections) {
     for (var c of connections) {
+      let wire = c.wire;
+      let pins = c.pins;
+
+      wire.ConnectPin(pins);
+      if (!this.target.wires.includes(wire))
+        this.target.wires.push(wire);
+
+      /*
       let refPin = c.refPin;
       let pins = c.pins;
 
       var pinsToConnect = refPin ? [refPin] : [];
       pinsToConnect = pinsToConnect.concat(pins);
 
-      var argPinsToConnect = pinsToConnect;
+      var argPinsToConnect = pinsToConnect.map(p => `${p.block.guid}.${p.name}`);
 
       let do_ret = this.$connect.Do({ pins: argPinsToConnect });
       if (!do_ret.success) { return do_ret; }
+      */
     }
 
     return UI_Feedback.Success(`Re-Connected pins.`, connections);
@@ -445,6 +497,8 @@ class UI_Command {
 
   Do(args) { return this.callback(args); }
   Undo(args, result) { return this.undoCallback(args, result); }
+
+  CanUndo() { return this.undoCallback ? true : false; }
 }
 
 class UI_Action {
@@ -460,7 +514,12 @@ class UI_Action {
     let fn_args = (this.command.args instanceof Function) ? this.command.args() : this.command.args;
     for (var argIdx in fn_args) {
       let arg = fn_args[argIdx];
-      commandArgs.push(this.args[arg.name]);
+      let argValue = this.args[arg.name] ?? '""';
+
+      // Check also for escape sequence, etc...
+      if (argValue.includes(' ')) argValue = `"${argValue}"`;
+      
+      commandArgs.push(argValue);
     }
     let commandPath = this.command._path.map(i => i.toUpperCase()).join(' ');
     return `${commandPath} ${commandArgs.join(' ')}`;
@@ -475,6 +534,8 @@ class UI_Action {
   ExecuteUndo(target) {
     return this.command.Undo(this.args, this.result);
   }
+
+  CanUndo() { return this.command.CanUndo(); }
 }
 
 class UI {
@@ -505,10 +566,58 @@ class UI {
     fn.callback.call(this, args);
   }
 
+  SplitCommand(cmd) {
+    let parts = [];
+
+    var part = '';
+    for (var chIdx = 0; chIdx < cmd.length; chIdx++) {
+      var ch = cmd[chIdx];
+      if (ch == ' ') {
+        if (part.length > 0)
+          parts.push(part);
+        part = ''
+      } else if (ch == '"') {
+        do {
+          chIdx++;
+          ch = cmd[chIdx];
+          if (ch == '"') {
+            break;
+          } else if (ch == '\\') {
+            chIdx++;
+            ch = cmd[chIdx];
+            if (ch == 'n') part += '\n'; else
+            if (ch == 'r') part += '\r'; else
+            if (ch == 't') part += '\t'; else
+            if (ch == 'v') part += '\v'; else
+            if (ch == '0') part += '\0'; else
+            if (ch == 'b') part += '\b'; else
+            if (ch == 'f') part += '\f'; else
+            if (ch == '\'') part += '\''; else
+            if (ch == '"') part += '"'; else
+            if (ch == '\\') part += '\\'; else
+            console.error('Invalid escape sequence!');
+          } else {
+            part += ch;
+          }
+        } while (chIdx < cmd.length);
+        if (part.length > 0)
+          parts.push(part);
+        part = '';
+      } else {
+        part += ch;
+      }
+    }
+
+    if (part.length > 0)
+      parts.push(part);
+
+    return parts;
+  }
+
   Execute(cmd) {
     console.log(`> ${cmd}`);
 
-    let cmd_parts = cmd.split(' ');
+    let cmd_parts = this.SplitCommand(cmd);
 
     if (cmd_parts.length > 0) {
       let container = this.SearchCommand(this.activeEditor, cmd_parts);

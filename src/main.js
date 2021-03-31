@@ -1,4 +1,6 @@
 let mainGenerator = new CGenerator();
+let sourceCache = {};
+
 class Block_OneShot extends CBlock {
   constructor() {
     super("oneshot", false);
@@ -45,7 +47,7 @@ class Block_Counter extends CBlock {
       ]
     );
 
-    this.Data = [{ name: 'value', type: 'int' }];
+    this.Datdependenciesa = [{ name: 'value', type: 'int' }];
 
     this.InitCode = null;
 
@@ -132,10 +134,10 @@ class Block_WL extends WLBlock {
   }
 
   $Init() {
-    let plugs = [GridSocket.Create({ id: 'out', type: 'bool', init: 'false'})];
+    let plugs = [GridSocket.Create({ id: 'in', type: 'bool', init: 'false'})];
     let nGrids = Math.max(+this.configs.size, 2);
     for (var gIdx = 0; gIdx < nGrids; gIdx++) {
-      let p_in = PlateSocket.Create({ id: `in_${gIdx}`, type: 'bool', init: 'false'});
+      let p_in = PlateSocket.Create({ id: `out_${gIdx}`, type: 'bool', init: 'false'});
       plugs.push(p_in);
     }
     this.AddPlug(plugs);
@@ -166,6 +168,7 @@ class Main extends WLBlock {
 
     // Blocks
     let b7 = Block_Not.Create();
+    let bb = Dispenser.Create();
 
     this.AddBlock(b7);
 
@@ -191,7 +194,7 @@ class Main extends WLBlock {
 }
 
 // CL Test
-/*
+
 class Dispenser extends CLBlock {
   constructor() {
     super("Dispenser");
@@ -204,6 +207,7 @@ class Dispenser extends CLBlock {
     this.AddPlug([ p_Work_A, p_Rest_A ]);
 
     let s001 = CLStep.CreateDefault('Init');
+
     let s002 = CLStep.CreateDefault('WaitStart');
     
     let s003a = CLStep.CreateDefault('DispenseLeft_Work');
@@ -219,7 +223,7 @@ class Dispenser extends CLBlock {
     let s006b = CLStep.CreateDefault('s006b');
     
     let s007a = CLStep.CreateDefault('End');
-    
+
     let seq = CLSequence.Create([
       s001,
       s002,
@@ -247,19 +251,14 @@ class Dispenser extends CLBlock {
       s007a
     ]);
 
-//    this.SetSequence(seq);
-
-    this.ConnectWire([
-      p_di_2.pin.value,
-      p_do_oled.pin.value_2
-    ]);
-
+    this.SetSequence(seq);
   }
 }
-*/
 
 
-//let b7 = Dispenser.Create();
+
+let b6 = Block_WL.Create();
+let b7 = Dispenser.Create();
 
 let mainBlock = Main.Create();
 let mainBoard = ArduinoUno_Board.Create(mainBlock);
@@ -284,7 +283,7 @@ ui.SetToolbox({
     Arduino_OLEDNumber_Plug
   ]
 });
-
+/*
 ui.Execute("BOARD ArduinoUno_Board");
 ui.Execute("ADD PLUG Arduino_DigitalInput_Plug 1 {pin:2}");
 ui.Execute("ADD PLUG Arduino_DigitalInput_Plug 2 {pin:3}");
@@ -298,6 +297,19 @@ ui.Execute('connect PG_1.value B1.in C1.reset');
 ui.Execute('connect B1.out C1.inc');
 ui.Execute('connect C1.actValue PP_1.value_0');
 
+ui.Execute('create c xor');
+ui.Execute('pin add I A bool false');
+ui.Execute('pin add I B bool false');
+ui.Execute('pin add O Y bool false');
+ui.Execute('code init ""')
+ui.Execute('code setup ""')
+ui.Execute('code loop ""')
+ui.Execute('editor save');
+
+ui.Execute('add block CBlock_xor B2');
+
+ui.Execute('connect PG_2.value B2.a');
+*/
 //ui.Execute("MOVE B1 B3");
 //ui.Execute("MOVE B3 D2");
 

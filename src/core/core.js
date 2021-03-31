@@ -47,6 +47,12 @@ class Wire {
   }
 
   ConnectPin(pin) {
+    if (Array.isArray(pin)) {
+      for (var p of pin)
+        this.ConnectPin(p);
+      return;
+    }
+
     if (pin.isPlate)
       this.SetPlate(pin);
     else
@@ -154,11 +160,14 @@ class BlockCode {
 class Block {
   constructor(name) {
     this.name = name;
-    this.guid = `b_anonymous`;
+    this.guid = this.DefaultGUID();
 
     this.properties = {}; // THERMIONIK access only properties
     this.configs = {}; // Impact only on code generation, so JS level
     this.settings = {}; // Will be in final code
+
+    this.sourceCache = null;
+    this.classCache = null;
   }
 
   static Create(configs) {
@@ -178,18 +187,43 @@ class Block {
   UpdateProperties(properties) {
     Object.assign(this.properties, properties ?? {});
     this.UpdateGUID();
+    this.ClearCache();
   }
 
   SetConfigs(configs) {
     this.configs = configs;
     this.$Init();
+    this.ClearCache();
   }
 
   SetSettings(settings) {
     this.settings = settings;
+    this.ClearCache();
+  }
+
+  /* ### Getters ### */
+  GetSource() {
+    if (this.sourceCache) {
+      console.log("cached", this);
+      return this.sourceCache;
+    }
+    console.log("generate", this);
+    this.sourceCache = this.$GenerateSource();
+    return this.sourceCache;
+  }
+
+  GetClass() {
+    if (this.classCache) return this.classCache;
+    this.classCache = this.$GenerateClass();
+    return this.classCache;
   }
 
   /* ### Utilities ### */
+  ClearCache() {
+    this.sourceCache = null;
+    this.classCache = null;
+  }
+
   DefaultGUID() {
     return `b_${Helpers.uuidv4()}`;
   }
@@ -218,6 +252,7 @@ class Block {
   /* ### Requirements ### */
   $Init() { console.error("$Init NOT IMPLEMENTED."); return null; }
   $Deinit() { console.error("$Deinit NOT IMPLEMENTED."); return null; }
+
   $GenerateSource() { console.error("$GenerateSource NOT IMPLEMENTED."); return null; }
 
   $GenerateClass() { console.error("$GenerateClass NOT IMPLEMENTED."); return null; }

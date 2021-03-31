@@ -89,7 +89,7 @@ class CLSequence_Conditional extends CLSequence {
 
       // Check if structure key is a valid parent step plug TODO: REMOVE FOR SPEEEEEEEED
       if (this.parentStep) {
-        let foundPlug = this.parentStep.block.FindPlugByName(sKey);
+        let foundPlug = this.parentStep.block.plug[sKey];
         if (!foundPlug) { console.error("[CLSequence_Conditional] SetStructure provvided structure key is not present in parent block plugs."); return null; }
         structurePlugs[sKey] = sVal;
       }
@@ -113,91 +113,6 @@ class CLSequence_Conditional extends CLSequence {
 }
 
 /* ##### Plugs ##### */
-class CLInternalSocket extends CBlock.Socket {
-  constructor(name, isPlate) {
-    super(name, isPlate);
-  }
-}
-
-class StepDefaultPlate extends CLInternalSocket {
-  constructor() {
-    super("StepDefaultPlate", true);
-  }
-
-  Init() {
-    this.AddPin(
-      [
-      ]
-    );
-  }
-
-  $ExternalPins() { return [ PlatePin.Create('Active', 'bool', 'false') ]; }
-}
-class StepDefaultGrid extends CLInternalSocket {
-  constructor() {
-    super("StepDefaultGrid", false);
-  }
-
-  Init() {
-    this.AddPin(
-      [
-        PlatePin.Create('Active', 'bool', 'false'),
-        PlatePin.Create('EntryShot', 'bool', 'false'),
-        PlatePin.Create('ExitShot', 'bool', 'false')
-      ]
-    );
-  }
-
-  $ExternalPins() { return []; }
-}
-
-class StepPlate extends CLInternalSocket {
-  constructor() {
-    super("StepPlate", true);
-  }
-
-  Init() {
-    this.AddPin(
-      [
-        GridPin.Create('ToPlate', this.configs.type, this.configs.init),
-      ]
-    );
-  }
-  
-  static DefaultConfigs() {
-    return {
-      id: `plate_${this.guid}`,
-      type: 'bool',
-      init: 'false'
-    }
-  }
-
-  $ExternalPins() { return [ PlatePin.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
-}
-class StepGrip extends CLInternalSocket {
-  constructor() {
-    super("StepGrip", false);
-  }
-
-  Init() {
-    this.AddPin(
-      [
-        PlatePin.Create('FromGrid', this.configs.type, this.configs.init)
-      ]
-    );
-  }
-
-  static DefaultConfigs() {
-    return {
-      id: `grid_${this.guid}`,
-      type: 'bool',
-      init: 'false'
-    }
-  }
-
-  $ExternalPins() { return [ GridPin.Create(this.configs.id, this.configs.type, this.configs.init) ]; }
-}
-
 class CLStep {
   constructor(id, block) {
     this.id = id;
@@ -208,7 +123,6 @@ class CLStep {
     this.transitionPlug = null;
     this.customExitPlates = [];
     this.customGrids = [];
-    this.UpdatePlugs();
   }
 
   SetExitPlates(plates) {
@@ -224,17 +138,15 @@ class CLStep {
   }
 
   UpdatePlugs() {
-    let p_defGrid = StepDefaultGrid.Create();
-    let p_defPlate = StepDefaultPlate.Create();
+    let p_defGrid = StepDefaultGridSocket.Create();
 
-    this.block.AddPlug(
-      [
-        p_defGrid,
-        p_defPlate
-      ]
-      .concat(this.customExitPlates.map(p => StepPlate.Create(p, 'bool', 'false')))
-      .concat(this.customGrids.map(p => StepGrid.Create(p, 'bool', 'false')))
-    );
+    let plugs = [
+      p_defGrid
+    ]
+    .concat(this.customExitPlates.map(p => PlateSocket.Create({ id: p, type: 'bool', init: 'false'})))
+    .concat(this.customGrids.map(p => GridSocket.Create({ id: p, type: 'bool', init: 'false'})));
+
+    this.block.AddPlug(plugs);
   }
 
   SetOwner(owner) {
@@ -250,15 +162,15 @@ class CLStep {
 
   static CreateDefault(id) {
     let blockIstance = new WLBlock(`Step__${id}`);
+    blockIstance.Data = [{ name: 'active', type: 'bool' }];
     let ret = new CLStep(id, blockIstance);
-/*
     ret.SetExitPlates(['Done']);
 
-    blockIstance.ConnectPlugs([
-      blockIstance.FindPlugByName('Activate'),
-      blockIstance.FindPlugByName('Done')
+    blockIstance.ConnectWire([
+      blockIstance.plug.StepDefaultGridSocket.pin.Active,
+      blockIstance.plug.Done
     ]);
-*/
+
     return ret;
   }
 }

@@ -279,8 +279,8 @@ class WLBlock_Workspace {
 
     if (!parentRender) { console.error("Parent render not found."); }
 
-    let pinRender = parentRender.pinRenders.all.find(p => p.pin.name == pin.name);
-    
+    let pinRender = parentRender.pinRenders.all.find(p => p.pin.name.toLowerCase() == pin.name.toLowerCase());
+
     ret.x = pinRender.svgPin.cx() + pinRender.svg.x() + parentRender.svg.x();
     ret.y = pinRender.svgPin.cy() + pinRender.svg.y() + parentRender.svg.y();
 
@@ -381,8 +381,8 @@ class WLBlock_Workspace {
     var bRow = 0;
     this.tableStructure.blocks = [];
     for (var b of this.block.blocks) {
-      bCol = b.properties.col = Math.max(1, (b.properties.col ?? (bCol + 1)));
-      bRow = b.properties.row = Math.max(1, (b.properties.row ?? (bRow + 1)));
+      bCol = b.properties.col = Math.max(1, b.properties.col ?? (bCol + 1));
+      bRow = b.properties.row = Math.max(1, b.properties.row ?? (bRow + 1));
 
       let render = new Block.Render(b);
       let box = this.CalculateBlockBox(
@@ -390,68 +390,14 @@ class WLBlock_Workspace {
         render.span
       );
       render.Resize(box.w, box.h);
-      render.svg.move(box.x + startx, box.y + starty);
+      render.svg.move(box.x + startx, Math.floor(box.y + starty));
       this.svgGrid.add(render.svg);
 
-      this.tableStructure.blocks[bCol - 1] = this.tableStructure.blocks[bCol] ?? [];
+      this.tableStructure.blocks[bCol - 1] = this.tableStructure.blocks[bCol - 1] ?? [];
       this.tableStructure.blocks[bCol - 1][bRow - 1] = render;
     }
 
     return;
-    // Draw plugs
-    for (var r = 0; r < this.size.h; r++) {
-      let tsr = ts.rows[r];
-      let by = tsr.offset + tsr.wiringCell + starty;
-
-      // Grid
-      let gridx = startx + ts.cols[0].offset;
-      let foundCellGridPlug = this.map.grids[r] ?? null;
-      if (foundCellGridPlug) {
-        let bWidth = foundCellGridPlug.span.cols * cellSize;
-        foundCellGridPlug.Resize(bWidth, foundCellGridPlug.span.rows * cellSize);
-        this.svgGrid.add(foundCellGridPlug.svg.move(gridx - bWidth - (cellSize / 2), by));
-      } else {
-        let bWidth = cellSize * 2;
-        this.svgGrid.rect(bWidth, cellSize).move(gridx - bWidth - (cellSize / 2), by).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
-      }
-
-      // Plate
-      let lastCol = ts.cols[ts.cols.length - 1];
-      let platex = startx + lastCol.offset + lastCol.wiringCell + lastCol.blockCell;
-      let foundCellPlatePlug = this.map.plates[r] ?? null;
-      if (foundCellPlatePlug) {
-        let bWidth = foundCellPlatePlug.span.cols * cellSize;
-        foundCellPlatePlug.Resize(bWidth, foundCellPlatePlug.span.rows * cellSize);
-        this.svgGrid.add(foundCellPlatePlug.svg.move(platex + (cellSize / 2), by));
-      } else {
-        let bWidth = cellSize * 2;
-        this.svgGrid.rect(bWidth, cellSize).move(platex + (cellSize / 2), by).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
-      }
-    }
-
-    // Draw blocks
-    for (var r = 0; r < this.size.h; r++) {
-      let tsr = ts.rows[r];
-      for (var c = 0; c < this.size.w; c++) {
-        let tsc = ts.cols[c];
-
-        let foundCellBlock = (this.map.blocks[c] ?? [])[r] ?? null;
-        if (foundCellBlock) {
-          let box = this.CalculateBlockBox(
-            { c: c, r: r},
-            foundCellBlock.span
-          );
-          foundCellBlock.Resize(box.w, box.h);
-          foundCellBlock.svg.move(box.x + startx, box.y + starty);
-          console.log(box.x + startx, box.y + starty, box.w, box.h);
-          this.svgGrid.add(foundCellBlock.svg);
-        } else {
-          let bx = tsc.offset + tsc.wiringCell + startx;
-          let by = tsr.offset + tsr.wiringCell + starty;
-          this.svgGrid.rect(cellSize, cellSize).move(bx, by).radius(10).fill('none').stroke({ color: '#50464964', width: 2 });
-        }
-      }
-    }
   }
 
   Render() {

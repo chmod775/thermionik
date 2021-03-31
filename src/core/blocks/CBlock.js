@@ -13,7 +13,7 @@ class CBlock extends Block {
     super(name);
 
     this.author = 'TROMBETTA';
-    this.advanced = (advanced != false);
+    this.advanced = (advanced == true);
     this.requirements = [];
 
     this.pin = { all: [], plate: {}, plates: [], grid: {}, grids: [] };
@@ -37,6 +37,7 @@ class CBlock extends Block {
       return;
     }
 
+    this.ClearCache();
     pin.SetBlock(this);
 
     let pName = pin.name;
@@ -59,6 +60,7 @@ class CBlock extends Block {
       return;
     }
 
+    this.ClearCache();
     pin.SetBlock(null);
 
     let pName = pin.name;
@@ -176,7 +178,7 @@ class CBlock extends Block {
         setupFunction: BlockCode.Create(genSetupCodeName, genSetupCodeFunction),
         loopFunction: BlockCode.Create(genLoopCodeName, genLoopCodeFunction)
       }
-    }
+    };
   }
 
   $GenerateClass() {
@@ -221,9 +223,9 @@ class CBlock extends Block {
       for (var pp of this.pin.plates) {
         let ppId = `p_${pp.name}`;
         let ppArgs = [
-          pp.name,
-          pp.type,
-          pp.init
+          generator.StringLiteral(pp.name),
+          generator.StringLiteral(pp.type),
+          generator.StringLiteral(pp.init)
         ];
         let genPinCreatorCode = generator.GenerateConst(
           ppId,
@@ -362,11 +364,9 @@ class CBlock extends Block {
   }
 
   /* ### Requirements ### */
-  InitCode() {
-    console.error("InitCode NOT IMPLEMENTED."); return TODO;
-  }
-  SetupCode() { console.error("SetupCode NOT IMPLEMENTED."); return TODO; }
-  LoopCode() { console.error("LoopCode NOT IMPLEMENTED."); return TODO; }
+  InitCode() { console.error("InitCode NOT IMPLEMENTED.", this); return TODO; }
+  SetupCode() { console.error("SetupCode NOT IMPLEMENTED.", this); return TODO; }
+  LoopCode() { console.error("LoopCode NOT IMPLEMENTED.", this); return TODO; }
   Data() { return []; }
 }
 
@@ -376,6 +376,8 @@ class CSocket extends CBlock {
   }
 
   $ExternalPins() { console.error("$ExternalPins NOT IMPLEMENTED."); return null; }
+
+  $GenerateConnection(toPin) { console.error("$GenerateConnection NOT IMPLEMENTED."); return null; }
 }
 
 CBlock.Socket = CSocket;
