@@ -128,6 +128,35 @@ class Block_And extends CBlock {
   }
 }
 
+class Block_Or extends CBlock {
+  constructor() {
+    super("or", true);
+  }
+
+  $Init() {
+    let nGrids = Math.max(+this.configs.size, 2);
+
+    let pins = [PlatePin.Create('out', 'bool', 'false')];
+    for (var gIdx = 0; gIdx < nGrids; gIdx++)
+      pins.push(GridPin.Create(`in_${gIdx}`, 'bool', 'false'));
+
+    this.AddPin(pins);
+  }
+
+  InitCode() {}
+  SetupCode() {}
+
+  LoopCode() {
+    let gridPins = this.pin.grids;
+    let gridNames = gridPins.map(p => p.name);
+    return `*out = ${gridNames.join(' || ')};`;
+  }
+
+  static $DefaultConfigs() {
+    return { size: 2 };
+  }
+}
+
 class Block_WL extends WLBlock {
   constructor() {
     super("WLLLLL");
@@ -259,16 +288,16 @@ class Dispenser extends CLBlock {
 
 let b6 = Block_WL.Create();
 let b7 = Dispenser.Create();
-
+/*
 let p = Arduino_DigitalInput_Plug.Create({ pin: 3 });
 b7.steps[4].block.AddPlug(p);
 b7.steps[4].block.ConnectWire([
   p.pin.plate.value,
   b7.steps[4].block.plug.Double
 ]);
-
+*/
 let mainBlock = Main.Create();
-let mainBoard = ArduinoUno_Board.Create(mainBlock);
+let mainBoard = ArduinoUno_Board.Create(b7);
 
 let ui = new UI();
 

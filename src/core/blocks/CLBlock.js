@@ -15,8 +15,9 @@ class CLSequence {
   }
 
   GetSteps() { console.error("GetSteps NOT IMPLEMENTED."); return null; }
+  GetJoints() { console.error("GetJoints NOT IMPLEMENTED."); return null; }
 
-  ConnectWith(parentStep) { console.error("ConnectWith NOT IMPLEMENTED."); return null; }
+  ConnectWithPin(container, srcPin) { console.error("ConnectWithPin NOT IMPLEMENTED."); return null; }
 }
 
 class CLSequence_Steps extends CLSequence {
@@ -44,30 +45,45 @@ class CLSequence_Steps extends CLSequence {
     return ret;
   }
 
-  ConnectWith(container, parentStep) {
+  GetJoints() {
+    let ret = [];
+    for (var i of this.items) {
+      if (i instanceof CLSequence)
+        ret = ret.concat(i.GetJoints());
+    }
+    return ret;
+  }
+
+  ConnectWithPin(container, srcPin) {
     for (var i of this.items) {
       if (i instanceof CLStep) {
-        if (parentStep) {
+        if (srcPin) {
           container.ConnectWire([
-            parentStep.block.pin.Done,
+            srcPin,
             i.block.pin.Activate,
           ]);
-        } else {
-          parentStep = i;
         }
+
+        srcPin = i.block.pin.Done;
       }
 
       if (i instanceof CLSequence) {
-        parentStep = i.ConnectWith(container, parentStep);
+        srcPin = i.ConnectWithPin(container, srcPin);
       }
     }
+
+    return srcPin;
   }
 }
 
 class CLSequence_Parallel extends CLSequence {
   constructor(sequences) {
     super();
+    
+    this.jointBlock = null;
+
     this.sequences = [];
+
     this.SetSequences(sequences);
   }
 
@@ -79,6 +95,8 @@ class CLSequence_Parallel extends CLSequence {
     if (nonSequenceItems.length > 0) { console.error("[CLSequence_Parallel] SetSequences argument must contain only CLSequence items."); return null; }
 
     this.sequences = sequences || [];
+
+    this.jointBlock = Block_And.Create({ size: this.sequences.length });
   }
 
   GetSteps() {
@@ -88,21 +106,32 @@ class CLSequence_Parallel extends CLSequence {
     return ret;
   }
 
-  ConnectWith(container, parentStep) {
+  GetJoints() {
     let ret = [];
-    let oldParentStep = parentStep;
-    for (var s of this.sequences) {
-      let parent = s.ConnectWith(oldParentStep);
-      if (!parent instanceof CLStep) { console.error("[CLSequence_Parallel] ConnectWith sequence not correct."); return null; }
-      ret.push(parent);
-    }
+    for (var s of this.sequences)
+      ret = ret.concat(s.GetJoints());
+    ret.push(this.jointBlock);
     return ret;
+  }
+
+  ConnectWithPin(container, srcPin) {
+    for (var sIdx in this.sequences) {
+      let s = this.sequences[sIdx];
+      let seqPin = s.ConnectWithPin(container, srcPin);
+      container.ConnectWire([
+        seqPin,
+        this.jointBlock.pin.grids[sIdx]
+      ]);
+    }
+    return this.jointBlock.pin.out;
   }
 }
 
 class CLSequence_Conditional extends CLSequence {
   constructor(parentStep, structure) {
     super();
+
+    this.jointBlock = null;
 
     this.parentStep = null;
     this.structure = {};
@@ -138,6 +167,8 @@ class CLSequence_Conditional extends CLSequence {
 
     this.structurePlugs = structurePlugs;
     this.structure = structure;
+
+    this.jointBlock = Block_Or.Create({ size: Object.keys(structure).length });
   }
 
   GetSteps() {
@@ -147,6 +178,37 @@ class CLSequence_Conditional extends CLSequence {
       ret = ret.concat(sVal.GetSteps());
     }
     return ret;
+  }
+
+  GetJoints() {
+    let ret = [];
+    for (var sKey in this.structure) {
+      let sVal = this.structure[sKey];
+      ret = ret.concat(sVal.GetJoints());
+    }
+    ret.push(this.jointBlock);
+    return ret;
+  }
+
+  ConnectWithPin(container, srcPin) {
+    // Connect parent step
+    container.ConnectWire([
+      srcPin,
+      this.parentStep.block.pin.Activate,
+    ]);
+
+    // Connect branches
+    let sIdx = 0;
+    for (var sKey in this.structure) {
+      let sVal = this.structure[sKey];
+      let seqPin = sVal.ConnectWithPin(container, this.parentStep.block.pin[sKey]);
+      container.ConnectWire([
+        seqPin,
+        this.jointBlock.pin.grids[sIdx]
+      ]);
+      sIdx++;
+    }
+    return this.jointBlock.pin.out;
   }
 }
 
@@ -227,20 +289,28 @@ class CLBlock extends WLBlock {
     super(name);
 
     this.sequence = null;
+    this.steps = [];
+    this.joints = [];
   }
 
   UpdateSteps() {
     if (!this.sequence) return;
 
-    this.steps = this.sequence.GetSteps();
-
     this.blocks = [];
+
+    // Add steps to blocks
+    this.steps = this.sequence.GetSteps();
     for (var s of this.steps) {
       s.SetOwner(this);
       this.AddBlock(s.block);
     }
 
-    this.sequence.ConnectWith(this, null);
+    // Add joints to blocks
+    this.joints = this.sequence.GetJoints();
+    this.AddBlock(this.joints);
+
+    // Create wiring
+    this.sequence.ConnectWithPin(this, null);
   }
 
   SetSequence(sequence) {
