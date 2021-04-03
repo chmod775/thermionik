@@ -15,7 +15,7 @@ class ArduinoUno_Board extends Board {
     if (!this.mainBlock) { console.error("Mainblock cannot be null."); return null; }
     let mainBlockSource = this.mainBlock.GetSource();
 
-    let sources = Object.values(this.mainBlock.dependencies).concat([mainBlockSource]);
+    let sources = Object.values(this.mainBlock.GetDependenciesTree()).map(d => d.code).concat([mainBlockSource]);
 
     let sourceLines = [
       mainGenerator.GenerateComment('    ______  __ __    ___  ____   ___ ___  ____   ___   ____   ____  __  _    '),
@@ -128,13 +128,13 @@ class Arduino_DigitalInput_Plug extends CBlock {
   }
 
   static $DefaultConfigs() {
-    return { pin: 0 };
+    return { pin: 0, pull: null };
   }
 
   InitCode() {}
 
   SetupCode() {
-    return `pinMode(${this.configs.pin}, INPUT);`
+    return `pinMode(${this.configs.pin}, INPUT${this.configs.pull ? '_PULL' + this.configs.pull.toUpperCase() : ''});`
   }
 
   LoopCode() {

@@ -15,7 +15,7 @@ class Block_OneShot extends CBlock {
     );
 
     this.Data = [
-      { name: 'lastval', type: 'bool' }
+      { name: 'lastval', type: 'bool', init: 'false' }
     ];
 
     this.LoopCode =
@@ -47,7 +47,7 @@ class Block_Counter extends CBlock {
       ]
     );
 
-    this.Data = [{ name: 'value', type: 'int' }];
+    this.Data = [{ name: 'value', type: 'int', init: '0' }];
 
     this.InitCode = null;
 
@@ -170,7 +170,6 @@ class Block_WL extends WLBlock {
       plugs.push(p_in);
     }
     this.AddPlug(plugs);
-    console.log(plugs);
     // Wiring
     this.ConnectWire(plugs);
   }
@@ -234,15 +233,15 @@ class Dispenser extends CLBlock {
     let p_Rest_A = PlateSocket.Create({ id: 'Rest_A', type: 'bool', init: 'false'});
 
     this.AddPlug([ p_Work_A, p_Rest_A ]);
-
+/*
     let s001 = CLStep.CreateDefault('Init');
 
-    let s002 = CLStep.CreateDefault('WaitStart');
+    let s002 = CLStep.CreateDefault('WaitStart', { grids: ['start']});
     
     let s003a = CLStep.CreateDefault('DispenseLeft_Work');
     let s004a = CLStep.CreateDefault('DispenseLeft_Rest');
     
-    let s003b = CLStep.Create(WLBlock, 'CycleType').SetExitPlates(['Double', 'Single']);
+    let s003b = CLStep.Create(WLBlock, 'CycleType', { exits: ['Double', 'Single']});
     
     let s004b = CLStep.CreateDefault('DispenseRight_Work');
     let s005b = CLStep.CreateDefault('DispenseRight_Rest');
@@ -253,7 +252,7 @@ class Dispenser extends CLBlock {
     
     let s007a = CLStep.CreateDefault('End');
 
-    let seq = CLSequence.Create([
+    let seq = ([
       s001,
       s002,
       CLSequence.CreateParallel([
@@ -279,8 +278,17 @@ class Dispenser extends CLBlock {
       ]),
       s007a
     ]);
+*/
 
-    this.SetSequence(seq);
+    let seq = [
+      CLStep.CreateDefault('s001'),
+      CLStep.CreateDefault('s002'),
+      CLStep.CreateDefault('s003'),
+      CLStep.CreateDefault('s004'),
+      CLStep.CreateDefault('s005')
+    ];
+
+    this.AddStep(seq);
   }
 }
 
@@ -288,14 +296,81 @@ class Dispenser extends CLBlock {
 
 let b6 = Block_WL.Create();
 let b7 = Dispenser.Create();
-/*
-let p = Arduino_DigitalInput_Plug.Create({ pin: 3 });
-b7.steps[4].block.AddPlug(p);
-b7.steps[4].block.ConnectWire([
-  p.pin.plate.value,
-  b7.steps[4].block.plug.Double
+
+let arduino_pins = [0, 1, 2, 4, 5];
+for (var pIdx in arduino_pins) {
+  let pVal = arduino_pins[pIdx];
+  let block = b7.blocks[pIdx];
+
+  var p = Arduino_DigitalInput_Plug.Create({ pin: pVal, pull: 'up' });
+  var n = Block_Not.Create();
+  var a = Block_And.Create();
+  block.AddPlug(p);
+  block.AddBlock([a, n]);
+  block.DisconnectWire([block.plug.Done]);
+  block.ConnectWire([
+    p.pin.plate.value,
+    n.pin.in
+  ]);
+  block.ConnectWire([
+    n.pin.out,
+    a.pin.in_0
+  ]);
+  block.ConnectWire([
+    block.plug.StepDefaultGridSocket.pin.Active,
+    a.pin.in_1
+  ]);
+  block.ConnectWire([
+    a.pin.out,
+    block.plug.Done
+  ]);
+}
+
+var po_3 = Arduino_DigitalOutput_Plug.Create({ pin: 3 });
+var po_7 = Arduino_DigitalOutput_Plug.Create({ pin: 7 });
+var po_9 = Arduino_DigitalOutput_Plug.Create({ pin: 9 });
+var po_8 = Arduino_DigitalOutput_Plug.Create({ pin: 8 });
+var po_10 = Arduino_DigitalOutput_Plug.Create({ pin: 10 });
+var po_11 = Arduino_DigitalOutput_Plug.Create({ pin: 11 });
+var po_12 = Arduino_DigitalOutput_Plug.Create({ pin: 12 });
+var po_13 = Arduino_DigitalOutput_Plug.Create({ pin: 13 });
+
+b7.AddPlug([
+  po_3,
+  po_7,
+  po_9,
+  po_8,
+  po_10,
+  po_11,
+  po_12,
+  po_13
 ]);
-*/
+
+b7.ConnectWire([
+  po_3.pin.value,
+  b7.blocks[0].pin.IsActive
+]);
+
+b7.ConnectWire([
+  po_7.pin.value,
+  b7.blocks[1].pin.IsActive
+]);
+
+b7.ConnectWire([
+  po_9.pin.value,
+  b7.blocks[2].pin.IsActive
+]);
+
+b7.ConnectWire([
+  po_8.pin.value,
+  b7.blocks[3].pin.IsActive
+]);
+
+b7.ConnectWire([
+  po_10.pin.value,
+  b7.blocks[4].pin.IsActive
+]);
+
 let mainBlock = Main.Create();
 let mainBoard = ArduinoUno_Board.Create(b7);
 

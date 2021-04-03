@@ -10,10 +10,9 @@ class WLBlock extends CBlock {
 
     this.blocks = [];
     this.wires = [];
-
-    this.dependencies = {};
   }
 
+  /* ### Blocks management ### */
   AddBlock(block) {
     if (Array.isArray(block)) {
       for (var b of block)
@@ -92,16 +91,6 @@ class WLBlock extends CBlock {
   }
 
   /* ### Wirings ### */
-  /*
-  CleanEmptyWires() {
-    this.wires = this.wires.filter(w => 
-      ((w.platePin == null) && (w.gridPins.length > 1))
-      ||
-      ((w.platePin != null) && (w.gridPins.length > 0))
-    );
-  }
-  */
-
   DisconnectWire(items) {
     // Get pins from items (direct Pin or Plugs)
     let pins = [];
@@ -159,18 +148,6 @@ class WLBlock extends CBlock {
     // Remove useless (and now empty) wires from list
     this.wires = this.wires.filter(w => !w.IsEmpty());
 
-    // Find reference pins of 'removedConnections'
-    /*
-    for (var c of removedConnections) {
-      if (c.wire.IsEmpty())
-        c.refPin = null;
-      else
-        c.refPin = c.wire.GetConnectedPins()[0];
-
-      c.wire = null;
-      delete c.wire;
-    }
-    */
     this.ClearCache();
 
     return removedConnections;
@@ -281,7 +258,10 @@ class WLBlock extends CBlock {
 
       // Generate dependencies
       var blockCode = b.GetSource();
-      this.dependencies[cacheKey] = blockCode;
+      this.dependencies[cacheKey] = {
+        block: b,
+        code: blockCode
+      };
 
       // Add to instance structure
       this.Data.push({
@@ -315,8 +295,8 @@ class WLBlock extends CBlock {
         let plateConnected = pi.wire ? pi.wire.platePin : null;
         
         if (plateConnected) {
-          if (plateConnected.block instanceof GridSocket) {
-            genLoopCallArgs.push(plateConnected.block.configs.id);
+          if (plateConnected.block instanceof CBlock.Socket) {
+            genLoopCallArgs.push(plateConnected.block.$GenerateConnection(plateConnected));
           } else {
             let plateConnected_bId = plateConnected.block.guid;
 

@@ -162,6 +162,8 @@ class Block {
     this.name = name;
     this.guid = this.DefaultGUID();
 
+    this.dependencies = {};
+
     this.properties = {}; // THERMIONIK access only properties
     this.configs = {}; // Impact only on code generation, so JS level
     this.settings = {}; // Will be in final code
@@ -201,7 +203,30 @@ class Block {
     this.ClearCache();
   }
 
+  AddDependency() {
+
+  }
+
   /* ### Getters ### */
+  GetDependenciesTree(tree) {
+    let ret = tree ?? {};
+
+    for (var dKey in this.dependencies) {
+      let dValue = this.dependencies[dKey];
+
+      if (!(dKey in ret)) {
+        let subDependencies = dValue.block.GetDependenciesTree(ret);
+        for (var sdKey in subDependencies)
+          if (!(sdKey in ret))
+            ret[sdKey] = subDependencies[sdKey];
+
+        ret[dKey] = dValue;
+      }
+    }
+
+    return ret;
+  }
+
   GetSource() {
     //if (this.sourceCache) {
     //  console.log("cached", this);

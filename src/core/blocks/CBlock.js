@@ -87,7 +87,23 @@ class CBlock extends Block {
 
     // Generate data structure
     let genDataName = `_s_data_${uName}`;
-    let genDataStructure = mainGenerator.GenerateStructure(genDataName, (this.Data instanceof Function) ? this.Data() : this.Data);
+    let genData = (this.Data instanceof Function) ? this.Data() : this.Data;
+    let genDataStructure = mainGenerator.GenerateStructure(genDataName, genData);
+
+    let genDataInitLines = [];
+    for (var d of genData) {
+      if (d.init) {
+        let genDataInitLine = mainGenerator.GenerateAssignment(
+          d.init,
+          mainGenerator.AccessIndirect(
+            'data',
+            d.name
+          )
+        )
+        genDataInitLines.push(genDataInitLine);
+      }
+    }
+    let genDataInitCode = genDataInitLines.join('\n');
 
     // Generate outputs structure
     let genOutputsElements = [];
@@ -121,7 +137,7 @@ class CBlock extends Block {
       genSetupCodeName,   // Name
       'void',                 // Return type
       genSetupCodeParameters, // Parameters
-      genSetupCode || ''      // SetupCode
+      [genDataInitCode, genSetupCode].join('\n') || ''      // SetupCode
     );
 
     // Generate loop code
@@ -356,7 +372,6 @@ class CBlock extends Block {
 
   $GenerateGUID() {
     if (this.IsValidPlug()) {
-      console.log(this.properties);
       return (this.IsPlatePlug() ? 'PP_' : 'PG_') + this.properties.row;
     } else {
       return Helpers.posToRef(this.properties);

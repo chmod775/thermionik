@@ -34,6 +34,18 @@ class CLSequence_Steps extends CLSequence {
     this.items = items || [];
   }
 
+  AddItem(item) {
+    if (Array.isArray(item)) {
+      for (var i of item)
+        this.AddItem(i);
+      return;
+    }
+
+    if (!(item instanceof CLSequence) && !(item instanceof CLStep)){ console.error("[CLSequence_Steps] AddItem argument contains invalid items."); return null; }
+
+    this.items.push(item);
+  }
+
   GetSteps() {
     let ret = [];
     for (var i of this.items) {
@@ -214,38 +226,28 @@ class CLSequence_Conditional extends CLSequence {
 
 /* ##### Plugs ##### */
 class CLStep {
-  constructor(id, block) {
+  constructor(id, block, userCustoms) {
     this.id = id;
     this.block = block;
 
     this.owner = null; // CLBlock
 
-    this.transitionPlug = null;
-    this.customExitPlates = [];
-    this.customGrids = [];
+    this.userCustoms = userCustoms ?? { };
+    this.userCustoms.exits = this.userCustoms.exits ?? [];
+    this.userCustoms.grids = this.userCustoms.grids ?? [];
+
+    this.CreatePlugs();
   }
 
-  SetExitPlates(plates) {
-    this.customExitPlates = plates;
-    this.UpdatePlugs();
-    return this;
-  } 
-
-  SetGrids(grids) {
-    this.customGrids = grids;
-    this.UpdatePlugs();
-    return this;
-  }
-
-  UpdatePlugs() {
+  CreatePlugs() {
     let p_defGrid = StepDefaultGridSocket.Create();
-    let p_defPlate = StepDefaultPlateSocket.Create({ exits: this.customExitPlates });
+    let p_defPlate = StepDefaultPlateSocket.Create({ exits: this.userCustoms.exits });
 
     let plugs = [
       p_defGrid
     ]
-    .concat(this.customGrids.map(p => GridSocket.Create({ id: p, type: 'bool', init: 'false'})))
-    .concat(this.customExitPlates.map(p => PlateSocket.Create({ id: p, type: 'bool', init: 'false'})))
+    .concat(this.userCustoms.grids.map(p => GridSocket.Create({ id: p, type: 'bool', init: 'false'})))
+    .concat(this.userCustoms.exits.map(p => PlateSocket.Create({ id: p, type: 'bool', init: 'false'})))
     .concat(
       [
         p_defPlate
@@ -260,18 +262,22 @@ class CLStep {
     this.block.name = `Step_${this.owner.name}_${this.id}`;
   }
 
-  static Create(type, id) {
+  static Create(type, id, userCustoms) {
     let blockIstance = new type(`Step__${id}`);
-    let ret = new CLStep(id, blockIstance);
+    blockIstance.Data = [{ name: 'active', type: 'bool', init: 'false' }];
+    let ret = new CLStep(id, blockIstance, userCustoms);
     return ret;
   }
 
-  static CreateDefault(id) {
-    let blockIstance = new WLBlock(`Step__${id}`);
-    blockIstance.Data = [{ name: 'active', type: 'bool' }];
+  static CreateDefault(id, userCustoms) {
+    userCustoms = userCustoms ?? { };
+    userCustoms.exits = userCustoms.exits ?? ['Done'];
+    userCustoms.grids = userCustoms.grids ?? [];
 
-    let ret = new CLStep(id, blockIstance);
-    ret.SetExitPlates(['Done']);
+    let blockIstance = new WLBlock(`Step__${id}`);
+    blockIstance.Data = [{ name: 'active', type: 'bool', init: 'false' }];
+
+    let ret = new CLStep(id, blockIstance, userCustoms);
 
     blockIstance.ConnectWire([
       blockIstance.plug.StepDefaultGridSocket.pin.Active,
@@ -288,7 +294,7 @@ class CLBlock extends WLBlock {
   constructor(name) {
     super(name);
 
-    this.sequence = null;
+    this.sequence = CLSequence.Create([]);
     this.steps = [];
     this.joints = [];
   }
@@ -308,13 +314,43 @@ class CLBlock extends WLBlock {
     // Add joints to blocks
     this.joints = this.sequence.GetJoints();
     this.AddBlock(this.joints);
-
-    // Create wiring
-    this.sequence.ConnectWithPin(this, null);
   }
 
   SetSequence(sequence) {
     this.sequence = sequence;
     this.UpdateSteps();
+  }
+
+  AddStep(step) {
+    if (Array.isArray(step)) {
+      for (var s of step)
+        this.AddStep(s);
+      return;
+    }
+
+    if (step instanceof CLStep) {
+      step.SetOwner(this);
+      this.AddBlock(step.block);
+    } else {
+      // Add step to blocks
+      let innerSteps = step.GetSteps();
+      for (var s of innerSteps) {
+        s.SetOwner(this);
+        this.AddBlock(s.block);
+      }
+
+      // Add joints to blocks
+      let innerJoints = step.GetJoints();
+      this.AddBlock(innerJoints);
+    }
+
+    this.sequence.AddItem(step);
+  }
+
+  $GenerateSource() {
+    // Create wiring
+    this.sequence.ConnectWithPin(this, null);
+
+    return super.$GenerateSource();
   }
 }

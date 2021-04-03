@@ -157,10 +157,10 @@ class StepDefaultGridSocket extends CBlock.FemaleSocket {
 
   $GenerateSource() {
     let genCode = `
-      bool Active = Activate;
+      bool Active = data->active;
       bool EntryShot = !data->active && Activate;
       bool ExitShot = data->active && !Activate;
-      if (Active) data->active = true;
+      if (Activate) data->active = true;
     `;
 
     return {
